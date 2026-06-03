@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1780405746437,
+      "tag": "0000_eminent_swordsman",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1780407671282,
+      "tag": "0001_next_blob",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1780408877886,
+      "tag": "0002_aromatic_nitro",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1780452625086,
+      "tag": "0003_military_scarlet_spider",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1780455435551,
+      "tag": "0004_mixed_riptide",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1780457352136,
+      "tag": "0005_lovely_satana",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1780458971049,
+      "tag": "0006_brown_blob",
+      "breakpoints": true
+    }
+  ]
+}
