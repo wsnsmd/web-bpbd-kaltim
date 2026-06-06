@@ -206,7 +206,7 @@ export async function HeroSection() {
       </div>
 
       {/* Bottom fade ke section berikutnya */}
-      <div className="from-background pointer-events-none absolute right-0 bottom-0 left-0 h-24 bg-gradient-to-t to-transparent" />
+      <div className="from-background pointer-events-none absolute right-0 bottom-0 left-0 h-24 bg-linear-to-t to-transparent" />
     </section>
   )
 }
