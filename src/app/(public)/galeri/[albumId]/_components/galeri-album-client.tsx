@@ -98,7 +98,7 @@ export function GaleriAlbumClient({ albumType, photos, videos }: Props) {
               <Expand className="h-6 w-6 text-white" />
             </div>
             {item.caption && (
-              <div className="absolute right-0 bottom-0 left-0 translate-y-full bg-gradient-to-t from-black/80 to-transparent p-3 text-[10px] text-white transition-transform group-hover:translate-y-0">
+              <div className="absolute right-0 bottom-0 left-0 translate-y-full bg-linear-to-t from-black/80 to-transparent p-3 text-[10px] text-white transition-transform group-hover:translate-y-0">
                 {item.caption}
               </div>
             )}

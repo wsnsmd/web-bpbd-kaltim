@@ -170,7 +170,7 @@ export default async function BeritaDetailPage({ params }: Props) {
               className="object-cover opacity-20"
               priority
             />
-            <div className="from-navy-900/60 via-navy-900/80 to-navy-900 absolute inset-0 bg-gradient-to-b" />
+            <div className="from-navy-900/60 via-navy-900/80 to-navy-900 absolute inset-0 bg-linear-to-b" />
           </>
         )}
         <div className="container-content max-w-content relative z-10 mx-auto pt-6 pb-10">
@@ -379,7 +379,7 @@ export default async function BeritaDetailPage({ params }: Props) {
                       href={`/berita/${r.slug}`}
                       className="group flex gap-3 p-4 transition hover:bg-slate-50"
                     >
-                      <div className="relative h-14 w-[72px] shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                      <div className="relative h-14 w-18 shrink-0 overflow-hidden rounded-lg bg-slate-100">
                         {r.featuredImage ? (
                           <Image
                             src={r.featuredImage}

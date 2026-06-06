@@ -181,7 +181,7 @@ export default async function KontakPage() {
                   href={item.href}
                   target={item.href?.startsWith('http') ? '_blank' : undefined}
                   rel="noopener noreferrer"
-                  className="flex items-start gap-3 rounded-lg bg-white p-4 ring-1 ring-black/[0.06] transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  className="flex items-start gap-3 rounded-lg bg-white p-4 ring-1 ring-black/6 transition-all hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.color}`}

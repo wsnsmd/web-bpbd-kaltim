@@ -84,7 +84,7 @@ export default async function GaleriPage() {
               const TypeIcon = TYPE_ICON[album.type ?? 'photo']
               return (
                 <Link key={album.id} href={`/galeri/${album.id}`} className="group block">
-                  <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.06] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                     {/* Cover */}
                     <div className="relative aspect-video overflow-hidden bg-slate-100">
                       {album.coverUrl ? (
@@ -100,7 +100,7 @@ export default async function GaleriPage() {
                         </div>
                       )}
                       {/* Overlay gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                       {/* Badges */}
                       <div className="absolute top-3 left-3 flex gap-2">
                         <span className="flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm">

@@ -267,7 +267,7 @@ export function DataKejadianClient({ incidents, kabkotas, jenisOptions }: Props)
       <div className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {/* Search */}
-          <div className="relative min-w-[200px] flex-1">
+          <div className="relative min-w-50 flex-1">
             <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
