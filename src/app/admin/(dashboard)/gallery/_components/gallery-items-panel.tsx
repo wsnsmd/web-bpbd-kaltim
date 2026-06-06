@@ -45,6 +45,17 @@ interface Props {
   initialItems: GalleryItem[]
 }
 
+// Auto-thumbnail dari YouTube
+function getYoutubeThumbnail(url: string | null | undefined): string | null {
+  if (!url) return null
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
+  return match ? `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg` : null
+}
+
+function getDisplayThumb(item: GalleryItem): string | null {
+  return item.thumbnailUrl || getYoutubeThumbnail(item.videoUrl)
+}
+
 export function GalleryItemsPanel({ albumId, albumType, initialItems }: Props) {
   const router = useRouter()
   const [items, setItems] = useState(initialItems)
@@ -127,18 +138,23 @@ export function GalleryItemsPanel({ albumId, albumType, initialItems }: Props) {
         </div>
       </div>
 
-      {/* Grid preview */}
-      {items.length > 0 && (
+      {/* Grid preview — pakai getDisplayThumb */}
+      {items.filter((i) => i.isActive && getDisplayThumb(i)).length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
           {items
-            .filter((i) => i.isActive && i.thumbnailUrl)
+            .filter((i) => i.isActive && getDisplayThumb(i))
             .slice(0, 12)
             .map((item) => (
               <div
                 key={item.id}
                 className="relative aspect-square overflow-hidden rounded-lg bg-slate-100"
               >
-                <Image src={item.thumbnailUrl!} alt={item.title} fill className="object-cover" />
+                <Image
+                  src={getDisplayThumb(item)!}
+                  alt={item.title}
+                  fill
+                  className="object-cover"
+                />
                 {item.type === 'video' && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                     <Play className="h-4 w-4 text-white" />
@@ -157,99 +173,103 @@ export function GalleryItemsPanel({ albumId, albumType, initialItems }: Props) {
             </div>
           ) : (
             <ul className="divide-y">
-              {items.map((item) => (
-                <li
-                  key={item.id}
-                  draggable
-                  onDragStart={() => setDragging(item.id)}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    setDragOver(item.id)
-                  }}
-                  onDrop={() => handleDrop(item.id)}
-                  onDragEnd={() => {
-                    setDragging(null)
-                    setDragOver(null)
-                  }}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3 transition-colors',
-                    dragging === item.id && 'opacity-40',
-                    dragOver === item.id &&
-                      dragging !== item.id &&
-                      'bg-navy-50 border-navy-500 border-l-2',
-                    !item.isActive && 'opacity-50'
-                  )}
-                >
-                  <GripVertical className="text-muted-foreground h-4 w-4 shrink-0 cursor-grab" />
-
-                  <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    {item.thumbnailUrl ? (
-                      <Image
-                        src={item.thumbnailUrl}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        {item.type === 'photo' ? (
-                          <ImageIcon className="h-5 w-5 text-slate-400" />
-                        ) : (
-                          <Play className="h-5 w-5 text-slate-400" />
-                        )}
-                      </div>
+              {items.map((item) => {
+                const thumb = getDisplayThumb(item)
+                const isAutoThumb = !item.thumbnailUrl && !!getYoutubeThumbnail(item.videoUrl)
+                return (
+                  <li
+                    key={item.id}
+                    draggable
+                    onDragStart={() => setDragging(item.id)}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setDragOver(item.id)
+                    }}
+                    onDrop={() => handleDrop(item.id)}
+                    onDragEnd={() => {
+                      setDragging(null)
+                      setDragOver(null)
+                    }}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 transition-colors',
+                      dragging === item.id && 'opacity-40',
+                      dragOver === item.id &&
+                        dragging !== item.id &&
+                        'bg-navy-50 border-navy-500 border-l-2',
+                      !item.isActive && 'opacity-50'
                     )}
-                    {item.type === 'video' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                        <Play className="h-3.5 w-3.5 text-white" />
-                      </div>
-                    )}
-                  </div>
+                  >
+                    <GripVertical className="text-muted-foreground h-4 w-4 shrink-0 cursor-grab" />
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium">{item.title}</span>
-                      <Badge variant="outline" className="shrink-0 px-1 py-0 text-[10px]">
-                        {item.type === 'photo' ? 'Foto' : 'Video'}
-                      </Badge>
-                      {!item.isActive && (
-                        <Badge variant="secondary" className="px-1 py-0 text-[10px]">
-                          Nonaktif
-                        </Badge>
+                    <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                      {thumb ? (
+                        <Image src={thumb} alt={item.title} fill className="object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          {item.type === 'photo' ? (
+                            <ImageIcon className="h-5 w-5 text-slate-400" />
+                          ) : (
+                            <Play className="h-5 w-5 text-slate-400" />
+                          )}
+                        </div>
+                      )}
+                      {item.type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <Play className="h-3.5 w-3.5 text-white" />
+                        </div>
                       )}
                     </div>
-                    {item.caption && (
-                      <p className="text-muted-foreground truncate text-xs">{item.caption}</p>
-                    )}
-                  </div>
 
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleToggle(item.id, item.isActive ?? true)}
-                      className={item.isActive ? 'text-green-600' : 'text-muted-foreground'}
-                    >
-                      {item.isActive ? (
-                        <Eye className="h-3.5 w-3.5" />
-                      ) : (
-                        <EyeOff className="h-3.5 w-3.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">{item.title}</span>
+                        <Badge variant="outline" className="shrink-0 px-1 py-0 text-[10px]">
+                          {item.type === 'photo' ? 'Foto' : 'Video'}
+                        </Badge>
+                        {isAutoThumb && (
+                          <Badge variant="secondary" className="shrink-0 px-1 py-0 text-[10px]">
+                            Auto thumb
+                          </Badge>
+                        )}
+                        {!item.isActive && (
+                          <Badge variant="secondary" className="px-1 py-0 text-[10px]">
+                            Nonaktif
+                          </Badge>
+                        )}
+                      </div>
+                      {item.caption && (
+                        <p className="text-muted-foreground truncate text-xs">{item.caption}</p>
                       )}
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" onClick={() => setEditItem(item)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(item.id, item.title)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleToggle(item.id, item.isActive ?? true)}
+                        className={item.isActive ? 'text-green-600' : 'text-muted-foreground'}
+                      >
+                        {item.isActive ? (
+                          <Eye className="h-3.5 w-3.5" />
+                        ) : (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setEditItem(item)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(item.id, item.title)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </CardContent>

@@ -117,3 +117,19 @@ export async function toggleMenuItemAction(id: number, isActive: boolean) {
   revalidatePath('/admin/navigation')
   return { success: true }
 }
+
+export async function reorderSubmenuItemsAction(orderedIds: number[]) {
+  const session = await auth()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  for (let i = 0; i < orderedIds.length; i++) {
+    await db
+      .update(menuItems)
+      .set({ order: i + 1, updatedAt: new Date() })
+      .where(eq(menuItems.id, orderedIds[i]))
+  }
+
+  revalidatePath('/')
+  revalidatePath('/admin/navigation')
+  return { success: true }
+}

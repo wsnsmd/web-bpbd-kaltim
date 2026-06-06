@@ -1,11 +1,12 @@
 // src/app/admin/(dashboard)/gallery/_components/gallery-item-dialog.tsx
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +43,18 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+// Ekstrak YouTube video ID
+function getYoutubeId(url: string | null | undefined): string | null {
+  if (!url) return null
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
+  return match ? match[1] : null
+}
+
+function getYoutubeThumbnail(url: string | null | undefined): string | null {
+  const id = getYoutubeId(url)
+  return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : null
+}
+
 interface Props {
   open: boolean
   onOpenChange: (o: boolean) => void
@@ -61,6 +74,7 @@ export function GalleryItemDialog({
 }: Props) {
   const isEdit = !!item
   const defaultType = albumType === 'video' ? 'video' : 'photo'
+  const [autoThumb, setAutoThumb] = useState<string | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -84,11 +98,21 @@ export function GalleryItemDialog({
         videoUrl: item?.videoUrl ?? '',
         isActive: item?.isActive ?? true,
       })
+      setAutoThumb(getYoutubeThumbnail(item?.videoUrl))
     }
   }, [open, item])
 
   const { isSubmitting } = form.formState
   const watchedType = form.watch('type')
+  const watchedVideoUrl = form.watch('videoUrl')
+  const watchedThumb = form.watch('thumbnailUrl')
+
+  // Auto-preview thumbnail dari YouTube saat URL berubah
+  useEffect(() => {
+    setAutoThumb(getYoutubeThumbnail(watchedVideoUrl))
+  }, [watchedVideoUrl])
+
+  const displayThumb = watchedThumb || autoThumb
 
   async function onSubmit(values: FormValues) {
     const payload = { ...values, albumId }
@@ -105,7 +129,7 @@ export function GalleryItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Item' : 'Tambah Item'}</DialogTitle>
         </DialogHeader>
@@ -163,18 +187,7 @@ export function GalleryItemDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="thumbnailUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{watchedType === 'photo' ? 'Foto' : 'Thumbnail'}</FormLabel>
-                  <MediaPicker value={field.value} onChange={field.onChange} />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            {/* URL Video dulu agar thumbnail auto muncul sebelum MediaPicker */}
             {watchedType === 'video' && (
               <FormField
                 control={form.control}
@@ -191,6 +204,43 @@ export function GalleryItemDialog({
                 )}
               />
             )}
+
+            {/* Thumbnail — untuk video tampilkan preview auto + opsi upload manual */}
+            <FormField
+              control={form.control}
+              name="thumbnailUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{watchedType === 'photo' ? 'Foto' : 'Thumbnail (Opsional)'}</FormLabel>
+
+                  {/* Preview thumbnail — manual atau auto YouTube */}
+                  {watchedType === 'video' && !field.value && autoThumb && (
+                    <div className="space-y-2">
+                      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-slate-100">
+                        <Image
+                          src={autoThumb}
+                          alt="Auto thumbnail YouTube"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <p className="text-muted-foreground text-[11px]">
+                        ✅ Thumbnail otomatis dari YouTube. Upload manual di bawah jika ingin
+                        mengganti.
+                      </p>
+                    </div>
+                  )}
+
+                  <MediaPicker value={field.value} onChange={field.onChange} />
+                  {watchedType === 'video' && (
+                    <FormDescription>
+                      Kosongkan untuk pakai thumbnail YouTube otomatis.
+                    </FormDescription>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

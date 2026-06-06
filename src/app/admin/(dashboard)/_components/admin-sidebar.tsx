@@ -20,6 +20,7 @@ import {
   ImageIcon,
   HelpCircle,
   LayoutTemplate,
+  Database,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -70,6 +71,7 @@ const NAV_MAIN = [
   { title: 'Unduhan', href: '/admin/downloads', icon: Download },
   { title: 'FAQ', href: '/admin/faq', icon: HelpCircle },
   { title: 'Peta & Kejadian', href: '/admin/incidents', icon: MapPin },
+  { title: 'Master Data', href: '/admin/master-data', icon: Database },
 ]
 
 const NAV_SYSTEM = [

@@ -217,7 +217,7 @@ export function MediaGrid({ initialItems, onSelect, mode = 'library' }: Props) {
               <Card
                 key={item.id}
                 className={cn(
-                  'group cursor-pointer overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md',
+                  'group cursor-pointer gap-0 overflow-hidden p-0 transition-all hover:-translate-y-0.5 hover:shadow-md',
                   mode === 'picker' && 'hover:ring-2 hover:ring-orange-500'
                 )}
                 onClick={() => mode === 'picker' && onSelect?.(item.url)}

@@ -50,6 +50,20 @@
       "when": 1780458971049,
       "tag": "0006_brown_blob",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1780654499706,
+      "tag": "0007_far_shocker",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1780664299810,
+      "tag": "0008_little_namor",
+      "breakpoints": true
     }
   ]
 }

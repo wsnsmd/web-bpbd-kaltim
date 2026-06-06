@@ -4,11 +4,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Expand, Play, ArrowRight, Camera, Film } from 'lucide-react'
+import { Expand, Play, ArrowRight, Camera, Film, X } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
 import { cn } from '@/lib/utils'
 
 interface GalleryItem {
@@ -25,12 +26,19 @@ interface Props {
   videos: GalleryItem[]
 }
 
-// Konversi YouTube URL ke embed URL
 function toEmbedUrl(url: string | null) {
   if (!url) return null
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
   if (match) return `https://www.youtube.com/embed/${match[1]}?autoplay=1`
   return url
+}
+
+// Ambil thumbnail YouTube otomatis dari URL
+function getYoutubeThumbnail(url: string | null): string | null {
+  if (!url) return null
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
+  if (match) return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`
+  return null
 }
 
 export function GaleriSection({ photos, videos }: Props) {
@@ -40,7 +48,6 @@ export function GaleriSection({ photos, videos }: Props) {
   return (
     <section className="bg-background border-border border-b py-20">
       <div className="container-content max-w-content mx-auto">
-        {/* Header */}
         <div className="mb-10 flex items-end justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-orange-600 uppercase">
@@ -78,7 +85,6 @@ export function GaleriSection({ photos, videos }: Props) {
             </TabsTrigger>
           </TabsList>
 
-          {/* ── Foto ── */}
           <TabsContent value="foto">
             {photos.length === 0 ? (
               <p className="text-muted-foreground py-8 text-center text-sm">Belum ada foto.</p>
@@ -88,7 +94,7 @@ export function GaleriSection({ photos, videos }: Props) {
                   <Card
                     key={item.id}
                     onClick={() => setLightboxPhoto(item)}
-                    className="group relative aspect-16/10 cursor-pointer overflow-hidden rounded-xl border-none bg-slate-100"
+                    className="group relative aspect-16/10 cursor-pointer overflow-hidden rounded-lg border-none bg-slate-100"
                   >
                     {item.thumbnailUrl ? (
                       <Image
@@ -114,7 +120,6 @@ export function GaleriSection({ photos, videos }: Props) {
             )}
           </TabsContent>
 
-          {/* ── Video ── */}
           <TabsContent value="video">
             {videos.length === 0 ? (
               <p className="text-muted-foreground py-8 text-center text-sm">Belum ada video.</p>
@@ -124,11 +129,12 @@ export function GaleriSection({ photos, videos }: Props) {
                   <Card
                     key={item.id}
                     onClick={() => setLightboxVideo(item)}
-                    className="group relative aspect-16/10 cursor-pointer overflow-hidden rounded-xl border-none bg-slate-100"
+                    className="group relative aspect-16/10 cursor-pointer overflow-hidden rounded-lg border-none bg-slate-100"
                   >
-                    {item.thumbnailUrl ? (
+                    {/* Auto-thumbnail: manual → YouTube → fallback icon */}
+                    {item.thumbnailUrl || getYoutubeThumbnail(item.videoUrl) ? (
                       <Image
-                        src={item.thumbnailUrl}
+                        src={item.thumbnailUrl || getYoutubeThumbnail(item.videoUrl)!}
                         alt={item.title}
                         fill
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -156,45 +162,85 @@ export function GaleriSection({ photos, videos }: Props) {
 
       {/* Lightbox Foto */}
       <Dialog open={!!lightboxPhoto} onOpenChange={(o) => !o && setLightboxPhoto(null)}>
-        <DialogContent className="max-w-3xl overflow-hidden p-0" showCloseButton>
-          {lightboxPhoto?.thumbnailUrl && (
-            <div className="relative aspect-video w-full">
-              <Image
-                src={lightboxPhoto.thumbnailUrl}
-                alt={lightboxPhoto.title}
-                fill
-                className="object-contain"
-              />
-            </div>
-          )}
-          {(lightboxPhoto?.caption || lightboxPhoto?.title) && (
-            <div className="text-muted-foreground px-6 py-3 text-sm">
-              {lightboxPhoto.caption || lightboxPhoto.title}
-            </div>
-          )}
+        <DialogContent
+          className="bg-navy-900/60 w-full max-w-[90vw] rounded-lg border-none shadow-none"
+          showCloseButton={false}
+        >
+          <VisuallyHidden.Root>
+            <DialogTitle>{lightboxPhoto?.title ?? 'Foto'}</DialogTitle>
+          </VisuallyHidden.Root>
+          <div className="relative flex flex-col items-center">
+            <button
+              onClick={() => setLightboxPhoto(null)}
+              className="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {lightboxPhoto?.thumbnailUrl && (
+              <div className="w-full overflow-hidden rounded-lg shadow-2xl">
+                <Image
+                  src={lightboxPhoto.thumbnailUrl}
+                  alt={lightboxPhoto.title}
+                  width={1920}
+                  height={1080}
+                  className="h-auto max-h-[80vh] w-full bg-black object-contain"
+                  priority
+                />
+              </div>
+            )}
+            {(lightboxPhoto?.caption || lightboxPhoto?.title) && (
+              <div className="mt-3 w-full rounded-lg bg-white/10 px-5 py-3 backdrop-blur-sm">
+                <p className="text-center text-sm font-medium text-white">
+                  {lightboxPhoto.caption || lightboxPhoto.title}
+                </p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Lightbox Video */}
       <Dialog open={!!lightboxVideo} onOpenChange={(o) => !o && setLightboxVideo(null)}>
-        <DialogContent className="max-w-3xl overflow-hidden p-0" showCloseButton>
-          {lightboxVideo?.videoUrl ? (
-            <div className="relative aspect-video w-full">
-              <iframe
-                src={toEmbedUrl(lightboxVideo.videoUrl) ?? ''}
-                title={lightboxVideo.title}
-                allow="autoplay; fullscreen"
-                className="h-full w-full"
-              />
+        <DialogContent
+          className="bg-navy-900/60 w-full max-w-[90vw] rounded-lg border-none pt-14 shadow-none"
+          showCloseButton={false}
+        >
+          <VisuallyHidden.Root>
+            <DialogTitle>{lightboxVideo?.title ?? 'Video'}</DialogTitle>
+          </VisuallyHidden.Root>
+          <div className="relative flex flex-col items-center">
+            {/* Tombol tutup */}
+            <button
+              onClick={() => setLightboxVideo(null)}
+              className="absolute -top-12 right-0 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {/* Video */}
+            <div
+              className="w-full overflow-hidden rounded-lg bg-black shadow-2xl"
+              style={{ aspectRatio: '16/9' }}
+            >
+              {lightboxVideo?.videoUrl ? (
+                <iframe
+                  src={toEmbedUrl(lightboxVideo.videoUrl) ?? ''}
+                  title={lightboxVideo?.title ?? 'Video'}
+                  allow="autoplay; fullscreen"
+                  className="h-full w-full"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-slate-400">URL video tidak tersedia</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="bg-navy-900 flex aspect-video items-center justify-center">
-              <p className="text-navy-400 text-sm">URL video tidak tersedia</p>
-            </div>
-          )}
-          {lightboxVideo?.title && (
-            <div className="text-muted-foreground px-6 py-3 text-sm">{lightboxVideo.title}</div>
-          )}
+            {/* Caption */}
+            {lightboxVideo?.title && (
+              <div className="mt-3 w-full rounded-lg bg-white/10 px-5 py-3 backdrop-blur-sm">
+                <p className="text-center text-sm font-medium text-white">{lightboxVideo.title}</p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </section>

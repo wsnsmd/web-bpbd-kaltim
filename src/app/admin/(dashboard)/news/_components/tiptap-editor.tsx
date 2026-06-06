@@ -1,6 +1,7 @@
 // src/app/admin/(dashboard)/news/_components/tiptap-editor.tsx
 'use client'
 
+import { useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -9,6 +10,7 @@ import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { MediaPicker } from '@/app/admin/(dashboard)/media/_components/media-picker'
 import {
   Bold,
   Italic,
@@ -22,6 +24,7 @@ import {
   Undo,
   Redo,
   Link as LinkIcon,
+  ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -31,10 +34,12 @@ interface Props {
 }
 
 export function TiptapEditor({ value, onChange }: Props) {
+  const [showImagePicker, setShowImagePicker] = useState(false)
+
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Placeholder.configure({ placeholder: 'Tulis konten berita di sini...' }),
+      Placeholder.configure({ placeholder: 'Tulis konten di sini...' }),
       CharacterCount,
       Image.configure({ inline: false, allowBase64: false }),
       Link.configure({ openOnClick: false, autolink: true }),
@@ -51,6 +56,12 @@ export function TiptapEditor({ value, onChange }: Props) {
 
   if (!editor) return null
 
+  function handleInsertImage(url: string) {
+    if (!url) return
+    editor?.chain().focus().setImage({ src: url }).run()
+    setShowImagePicker(false)
+  }
+
   type ToolItem = {
     icon: React.FC<any>
     action: () => void
@@ -58,6 +69,7 @@ export function TiptapEditor({ value, onChange }: Props) {
     disabled?: boolean
     title: string
   }
+
   const tools: { group: string; items: ToolItem[] }[] = [
     {
       group: 'history',
@@ -140,6 +152,16 @@ export function TiptapEditor({ value, onChange }: Props) {
         },
       ],
     },
+    {
+      group: 'media',
+      items: [
+        {
+          icon: ImageIcon,
+          action: () => setShowImagePicker(true),
+          title: 'Insert Gambar',
+        },
+      ],
+    },
   ]
 
   return (
@@ -177,6 +199,15 @@ export function TiptapEditor({ value, onChange }: Props) {
           {editor.storage.characterCount.words()} kata
         </span>
       </div>
+
+      {/* Media picker modal untuk insert gambar */}
+      <MediaPicker
+        open={showImagePicker}
+        onOpenChange={setShowImagePicker}
+        value=""
+        onChange={handleInsertImage}
+        imageOnly
+      />
     </div>
   )
 }

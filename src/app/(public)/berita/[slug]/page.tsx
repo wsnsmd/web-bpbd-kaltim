@@ -246,7 +246,7 @@ export default async function BeritaDetailPage({ params }: Props) {
           <div className="space-y-0">
             {/* Featured Image (jika ada) di bawah hero */}
             {item.featuredImage && (
-              <div className="relative -mt-16 mb-8 aspect-video w-full overflow-hidden rounded-2xl shadow-xl ring-4 ring-white">
+              <div className="relative -mt-16 mb-8 aspect-video w-full overflow-hidden rounded-lg shadow-xl ring-4 ring-white">
                 <Image
                   src={item.featuredImage}
                   alt={item.title}
@@ -257,17 +257,17 @@ export default async function BeritaDetailPage({ params }: Props) {
               </div>
             )}
 
-            <article className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+            <article className="rounded-lg bg-white p-8 shadow-sm ring-1 ring-black/5">
               {/* Excerpt */}
               {item.excerpt && (
-                <p className="text-navy-700 mb-8 rounded-xl border-l-[3px] border-orange-500 bg-orange-50 px-5 py-4 text-base leading-relaxed font-medium">
+                <p className="text-navy-700 mb-8 rounded-lg border-l-[3px] border-orange-500 bg-orange-50 px-5 py-4 text-base leading-relaxed font-medium">
                   {item.excerpt}
                 </p>
               )}
 
               {/* Konten */}
               <div
-                className="prose prose-base prose-headings:text-navy-800 prose-headings:font-bold prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-100 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:text-gray-700 prose-p:leading-[1.85] prose-p:mb-4 prose-a:text-navy-600 prose-a:font-medium prose-a:underline prose-a:underline-offset-2 prose-img:rounded-xl prose-img:w-full prose-img:my-8 prose-img:shadow-md prose-blockquote:border-l-[3px] prose-blockquote:border-orange-400 prose-blockquote:bg-orange-50 prose-blockquote:px-5 prose-blockquote:py-3 prose-blockquote:rounded-r-xl prose-blockquote:not-italic prose-blockquote:text-navy-700 prose-blockquote:font-medium prose-strong:text-navy-800 prose-strong:font-semibold prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:mb-1.5 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-navy-700 prose-code:text-xs max-w-none"
+                className="prose prose-base prose-headings:text-navy-800 prose-headings:font-bold prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-100 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:text-gray-700 prose-p:leading-[1.85] prose-p:mb-4 prose-a:text-navy-600 prose-a:font-medium prose-a:underline prose-a:underline-offset-2 prose-img:rounded-lg prose-img:w-full prose-img:my-8 prose-img:shadow-md prose-blockquote:border-l-[3px] prose-blockquote:border-orange-400 prose-blockquote:bg-orange-50 prose-blockquote:px-5 prose-blockquote:py-3 prose-blockquote:rounded-r-xl prose-blockquote:not-italic prose-blockquote:text-navy-700 prose-blockquote:font-medium prose-strong:text-navy-800 prose-strong:font-semibold prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:mb-1.5 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-navy-700 prose-code:text-xs max-w-none"
                 dangerouslySetInnerHTML={{ __html: item.content }}
               />
 
@@ -286,7 +286,7 @@ export default async function BeritaDetailPage({ params }: Props) {
           {/* ── Sidebar ── */}
           <aside className="space-y-5">
             {/* Info artikel */}
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+            <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/5">
               <div className="bg-navy-800 px-5 py-3.5">
                 <p className="text-navy-200 text-[11px] font-bold tracking-widest uppercase">
                   Info Artikel
@@ -342,7 +342,7 @@ export default async function BeritaDetailPage({ params }: Props) {
 
             {/* Kategori */}
             {categories.length > 0 && (
-              <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+              <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/5">
                 <div className="bg-navy-800 flex items-center gap-2 px-5 py-3.5">
                   <Tag className="text-navy-300 h-3.5 w-3.5" />
                   <p className="text-navy-200 text-[11px] font-bold tracking-widest uppercase">
@@ -366,7 +366,7 @@ export default async function BeritaDetailPage({ params }: Props) {
 
             {/* Berita terkait */}
             {related.length > 0 && (
-              <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+              <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/5">
                 <div className="bg-navy-800 px-5 py-3.5">
                   <p className="text-navy-200 text-[11px] font-bold tracking-widest uppercase">
                     Berita Terkait
@@ -379,7 +379,7 @@ export default async function BeritaDetailPage({ params }: Props) {
                       href={`/berita/${r.slug}`}
                       className="group flex gap-3 p-4 transition hover:bg-slate-50"
                     >
-                      <div className="relative h-14 w-[72px] shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                      <div className="relative h-14 w-[72px] shrink-0 overflow-hidden rounded-lg bg-slate-100">
                         {r.featuredImage ? (
                           <Image
                             src={r.featuredImage}
@@ -417,7 +417,7 @@ export default async function BeritaDetailPage({ params }: Props) {
 
             {/* Berita terbaru */}
             {latestNews.length > 0 && (
-              <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+              <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/5">
                 <div className="bg-navy-800 flex items-center gap-2 px-5 py-3.5">
                   <TrendingUp className="text-navy-300 h-3.5 w-3.5" />
                   <p className="text-navy-200 text-[11px] font-bold tracking-widest uppercase">

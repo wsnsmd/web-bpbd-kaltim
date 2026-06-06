@@ -15,7 +15,11 @@
     "db:seed": "bun run database/seed.ts",
     "db:seed:news": "bun run database/seeds/news.ts",
     "db:seed:navigation": "bun run database/seeds/navigation.ts",
-    "db:seed:services": "bun run database/seeds/services.ts"
+    "db:seed:services": "bun run database/seeds/services.ts",
+    "db:seed:profil": "bun run database/seeds/profile-pages.ts",
+    "db:seed:regions": "bun run database/seeds/regions.ts",
+    "db:seed:master-data": "bun run database/seeds/master-data.ts",
+    "db:seed:incidents-dummy": "bun run database/seeds/incidents-dummy-seed.ts"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
@@ -39,6 +43,7 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.17.0",
+    "mapbox-gl": "^3.24.0",
     "mysql2": "^3.22.4",
     "nanoid": "^5.1.11",
     "next": "16.2.6",
@@ -63,6 +68,7 @@
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/bcryptjs": "^3.0.0",
+    "@types/mapbox-gl": "^3.5.0",
     "@types/node": "^25.9.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

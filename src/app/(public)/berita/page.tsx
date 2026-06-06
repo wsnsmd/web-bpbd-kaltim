@@ -114,7 +114,7 @@ export default async function BeritaPage({ searchParams }: Props) {
             {/* Featured article */}
             {featured && (
               <Link href={`/berita/${featured.slug}`} className="group mb-8 block">
-                <div className="border-border bg-card grid overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg md:grid-cols-2">
+                <div className="border-border bg-card grid overflow-hidden rounded-lg border transition-all duration-300 hover:shadow-lg md:grid-cols-2">
                   <div className="relative aspect-video bg-slate-100 md:aspect-auto">
                     {featured.featuredImage ? (
                       <Image
@@ -168,7 +168,7 @@ export default async function BeritaPage({ searchParams }: Props) {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {regular.map((item) => (
                 <Link key={item.id} href={`/berita/${item.slug}`} className="group block">
-                  <article className="border-border bg-card h-full overflow-hidden rounded-xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+                  <article className="border-border bg-card h-full overflow-hidden rounded-lg border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
                     <div className="relative aspect-video overflow-hidden bg-slate-100">
                       {item.featuredImage ? (
                         <Image

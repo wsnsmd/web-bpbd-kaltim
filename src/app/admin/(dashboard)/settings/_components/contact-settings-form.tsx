@@ -3,10 +3,11 @@
 
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
 import {
   Form,
   FormControl,
@@ -16,7 +17,6 @@ import {
   FormDescription,
   FormMessage,
 } from '@/components/ui/form'
-import { Separator } from '@/components/ui/separator'
 import { saveSettingsAction } from '../_actions/settings-actions'
 
 interface Props {
@@ -36,6 +36,11 @@ export function ContactSettingsForm({ settings }: Props) {
       social_instagram: settings.social_instagram ?? '',
       social_youtube: settings.social_youtube ?? '',
       social_twitter: settings.social_twitter ?? '',
+      // ── Mapbox ──
+      mapbox_token: settings.mapbox_token ?? '',
+      map_latitude: settings.map_latitude ?? '-0.5022',
+      map_longitude: settings.map_longitude ?? '117.1364',
+      map_zoom: settings.map_zoom ?? '15',
     },
   })
 
@@ -43,13 +48,14 @@ export function ContactSettingsForm({ settings }: Props) {
 
   async function onSubmit(values: Record<string, string>) {
     const res = await saveSettingsAction(values)
-    if (res.success) toast.success('Pengaturan berhasil disimpan')
+    if (res.success) toast.success('Pengaturan disimpan')
     else toast.error(res.error ?? 'Terjadi kesalahan')
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-xl space-y-5">
+        {/* Kontak */}
         <FormField
           control={form.control}
           name="contact_address"
@@ -57,7 +63,7 @@ export function ContactSettingsForm({ settings }: Props) {
             <FormItem>
               <FormLabel>Alamat Kantor</FormLabel>
               <FormControl>
-                <Textarea rows={2} {...field} />
+                <Textarea rows={3} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -70,7 +76,7 @@ export function ContactSettingsForm({ settings }: Props) {
             name="contact_phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Telepon Kantor</FormLabel>
+                <FormLabel>Telepon</FormLabel>
                 <FormControl>
                   <Input placeholder="(0541) XXX-XXXX" {...field} />
                 </FormControl>
@@ -83,7 +89,7 @@ export function ContactSettingsForm({ settings }: Props) {
             name="contact_emergency"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nomor Darurat</FormLabel>
+                <FormLabel>Call Center Darurat</FormLabel>
                 <FormControl>
                   <Input placeholder="112" {...field} />
                 </FormControl>
@@ -101,7 +107,7 @@ export function ContactSettingsForm({ settings }: Props) {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" {...field} />
+                  <Input placeholder="pusdalops@..." {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -112,11 +118,10 @@ export function ContactSettingsForm({ settings }: Props) {
             name="contact_whatsapp"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>WhatsApp</FormLabel>
+                <FormLabel>WhatsApp (format: 628xxx)</FormLabel>
                 <FormControl>
-                  <Input placeholder="628XXXXXXXXXX" {...field} />
+                  <Input placeholder="628123456789" {...field} />
                 </FormControl>
-                <FormDescription>Format: 628xxx (tanpa +)</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -138,33 +143,123 @@ export function ContactSettingsForm({ settings }: Props) {
         />
 
         <Separator />
-        <p className="text-sm font-medium">Media Sosial</p>
 
-        {[
-          { name: 'social_facebook', label: 'Facebook', placeholder: 'https://facebook.com/...' },
-          {
-            name: 'social_instagram',
-            label: 'Instagram',
-            placeholder: 'https://instagram.com/...',
-          },
-          { name: 'social_youtube', label: 'YouTube', placeholder: 'https://youtube.com/...' },
-          { name: 'social_twitter', label: 'X (Twitter)', placeholder: 'https://x.com/...' },
-        ].map((item) => (
+        {/* Sosial media */}
+        <p className="text-navy-800 text-sm font-semibold">Media Sosial</p>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { name: 'social_facebook', label: 'Facebook URL' },
+            { name: 'social_instagram', label: 'Instagram URL' },
+            { name: 'social_youtube', label: 'YouTube URL' },
+            { name: 'social_twitter', label: 'X / Twitter URL' },
+          ].map(({ name, label }) => (
+            <FormField
+              key={name}
+              control={form.control}
+              name={name as any}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
+        </div>
+
+        <Separator />
+
+        {/* Mapbox */}
+        <div className="space-y-4 rounded-xl border p-5">
+          <div className="flex items-center gap-2">
+            <MapPin className="text-navy-600 h-4 w-4" />
+            <p className="text-navy-800 text-sm font-semibold">Pengaturan Peta (Mapbox)</p>
+          </div>
+
           <FormField
-            key={item.name}
             control={form.control}
-            name={item.name as any}
+            name="mapbox_token"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{item.label}</FormLabel>
+                <FormLabel>Mapbox Access Token</FormLabel>
                 <FormControl>
-                  <Input placeholder={item.placeholder} {...field} />
+                  <Input placeholder="pk.eyJ1Ijoixxxxxxxx..." {...field} />
                 </FormControl>
+                <FormDescription>
+                  Daftar gratis di{' '}
+                  <a
+                    href="https://mapbox.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-navy-600 hover:text-navy-800 underline"
+                  >
+                    mapbox.com
+                  </a>{' '}
+                  · Free tier: 50.000 map loads/bulan
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-        ))}
+
+          <div className="grid grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="map_latitude"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Latitude</FormLabel>
+                  <FormControl>
+                    <Input placeholder="-0.5022" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="map_longitude"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Longitude</FormLabel>
+                  <FormControl>
+                    <Input placeholder="117.1364" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="map_zoom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Zoom (1–20)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={1} max={20} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormDescription>
+            Untuk mencari koordinat: buka{' '}
+            <a
+              href="https://maps.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-navy-600 hover:text-navy-800 underline"
+            >
+              Google Maps
+            </a>
+            , klik lokasi kantor, salin koordinat dari URL atau klik kanan → "What's here?".
+          </FormDescription>
+        </div>
 
         <div className="flex justify-end">
           <Button type="submit" variant="accent" disabled={isSubmitting}>

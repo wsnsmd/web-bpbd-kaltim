@@ -151,7 +151,7 @@ export default async function PagesListPage({ searchParams }: PageProps) {
                     </TableCell>
                     <TableCell>
                       {row.showInNav ? (
-                        <Badge variant="default" className="bg-navy-600 text-xs">
+                        <Badge variant="default" className="bg-navy-600 text-xs text-white">
                           Di Nav
                         </Badge>
                       ) : (

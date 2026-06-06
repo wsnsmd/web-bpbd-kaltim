@@ -1,7 +1,7 @@
 // src/app/admin/(dashboard)/media/_components/media-picker.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { ImageIcon, X, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,20 +29,39 @@ interface MediaItem {
 interface Props {
   value?: string
   onChange: (url: string) => void
+  // Props tambahan untuk controlled mode (dari TiptapEditor)
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  imageOnly?: boolean // filter hanya tampilkan gambar
 }
 
-export function MediaPicker({ value, onChange }: Props) {
-  const [open, setOpen] = useState(false)
+export function MediaPicker({
+  value,
+  onChange,
+  open: controlledOpen,
+  onOpenChange,
+  imageOnly,
+}: Props) {
+  const isControlled = controlledOpen !== undefined
+
+  const [internalOpen, setInternalOpen] = useState(false)
   const [items, setItems] = useState<MediaItem[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Fix 2: fetch ulang setiap kali dialog dibuka (bukan hanya saat items kosong)
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (v: boolean) => onOpenChange?.(v) : setInternalOpen
+
   async function fetchMedia() {
     setLoading(true)
     try {
       const res = await fetch('/api/media')
       const data = await res.json()
-      setItems(data.items ?? [])
+      let mediaItems = data.items ?? []
+      // Filter hanya gambar jika imageOnly
+      if (imageOnly) {
+        mediaItems = mediaItems.filter((i: MediaItem) => i.mimeType.startsWith('image/'))
+      }
+      setItems(mediaItems)
     } catch {
       // silent
     } finally {
@@ -59,6 +78,37 @@ export function MediaPicker({ value, onChange }: Props) {
     setOpen(false)
   }
 
+  const dialogContent = (
+    <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-4xl">
+      <DialogHeader className="flex-row items-center justify-between border-b px-6 py-4">
+        <DialogTitle>{imageOnly ? 'Pilih Gambar' : 'Media Library'}</DialogTitle>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={fetchMedia}
+          disabled={loading}
+          title="Refresh"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+      </DialogHeader>
+      <div className="flex-1 overflow-y-auto p-6">
+        <MediaGrid initialItems={items} mode="picker" onSelect={handleSelect} />
+      </div>
+    </DialogContent>
+  )
+
+  // ── Mode controlled (dari TiptapEditor) — tidak tampilkan preview/trigger ──
+  if (isControlled) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        {dialogContent}
+      </Dialog>
+    )
+  }
+
+  // ── Mode normal (featured image picker) ──
   return (
     <div className="space-y-2">
       {value ? (
@@ -91,27 +141,7 @@ export function MediaPicker({ value, onChange }: Props) {
             {value ? 'Ganti Gambar' : 'Pilih Gambar'}
           </Button>
         </DialogTrigger>
-
-        {/* Fix 3: perbesar modal — max-w-6xl, tinggi lebih besar */}
-        <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-4xl">
-          <DialogHeader className="flex-row items-center justify-between border-b px-6 py-4">
-            <DialogTitle>Media Library</DialogTitle>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={fetchMedia}
-              disabled={loading}
-              title="Refresh"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            <MediaGrid initialItems={items} mode="picker" onSelect={handleSelect} />
-          </div>
-        </DialogContent>
+        {dialogContent}
       </Dialog>
     </div>
   )

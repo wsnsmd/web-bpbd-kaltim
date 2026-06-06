@@ -44,4 +44,9 @@ export const DEFAULT_SETTINGS = {
   // Media
   upload_max_size_mb: '5',
   upload_allowed_types: 'image/jpeg,image/png,image/webp,image/gif',
+
+  mapbox_token: '',
+  map_latitude: '-0.5022',
+  map_longitude: '117.1364',
+  map_zoom: '15',
 }

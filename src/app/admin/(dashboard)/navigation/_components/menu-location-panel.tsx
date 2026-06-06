@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { MENU_LOCATIONS, type MenuLocation } from '@db/schema/navigation'
 import {
   reorderMenuItemsAction,
+  reorderSubmenuItemsAction,
   deleteMenuItemAction,
   toggleMenuItemAction,
 } from '../_actions/navigation-actions'
@@ -48,37 +49,35 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
   const [items, setItems] = useState(initialItems)
   const [dragging, setDragging] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
+  const [draggingChild, setDraggingChild] = useState<number | null>(null)
+  const [dragOverChild, setDragOverChild] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [editItem, setEditItem] = useState<MenuItem | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [createParentId, setCreateParentId] = useState<number | null>(null)
 
-  // ── Pisahkan parent dan children ─────────────────────────
   const parentItems = items.filter((i) => !i.parentId)
-  const getChildren = (parentId: number) => items.filter((i) => i.parentId === parentId)
+  const getChildren = (parentId: number) =>
+    items.filter((i) => i.parentId === parentId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
-  // ── Drag & Drop (parent items only) ─────────────────────
-  function handleDragStart(id: number) {
-    setDragging(id)
-  }
-  function handleDragOver(e: React.DragEvent, id: number) {
-    e.preventDefault()
-    setDragOver(id)
-  }
-
-  async function handleDrop(targetId: number) {
+  // ── Drag parent ──────────────────────────────────────────
+  async function handleParentDrop(targetId: number) {
     if (dragging === null || dragging === targetId) {
       setDragging(null)
       setDragOver(null)
       return
     }
     const reordered = [...parentItems]
-    const oldIndex = reordered.findIndex((i) => i.id === dragging)
-    const newIndex = reordered.findIndex((i) => i.id === targetId)
-    const [moved] = reordered.splice(oldIndex, 1)
-    reordered.splice(newIndex, 0, moved)
+    const [moved] = reordered.splice(
+      reordered.findIndex((i) => i.id === dragging),
+      1
+    )
+    reordered.splice(
+      reordered.findIndex((i) => i.id === targetId),
+      0,
+      moved
+    )
 
-    // Gabungkan kembali dengan children
     const children = items.filter((i) => i.parentId)
     setItems([...reordered, ...children])
     setDragging(null)
@@ -90,12 +89,58 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
       reordered.map((i) => i.id)
     )
     setSaving(false)
-
     if (res.success) {
       toast.success('Urutan disimpan')
       router.refresh()
     } else {
-      toast.error('Gagal menyimpan urutan')
+      toast.error('Gagal')
+      setItems(initialItems)
+    }
+  }
+
+  // ── Drag submenu — pakai ref snapshot ────────────────────
+  async function handleChildDrop(parentId: number, targetChildId: number, sourceChildId: number) {
+    if (sourceChildId === targetChildId) {
+      setDraggingChild(null)
+      setDragOverChild(null)
+      return
+    }
+
+    // Ambil siblings langsung dari items state saat ini
+    const siblings = items
+      .filter((i) => i.parentId === parentId)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+
+    const dragIdx = siblings.findIndex((i) => i.id === sourceChildId)
+    const targetIdx = siblings.findIndex((i) => i.id === targetChildId)
+
+    if (dragIdx === -1 || targetIdx === -1) {
+      setDraggingChild(null)
+      setDragOverChild(null)
+      return
+    }
+
+    // Reorder array
+    const reordered = [...siblings]
+    const [moved] = reordered.splice(dragIdx, 1)
+    reordered.splice(targetIdx, 0, moved)
+
+    // Update order field
+    const reorderedWithOrder = reordered.map((item, idx) => ({ ...item, order: idx + 1 }))
+
+    // Update state — ganti siblings, pertahankan item lain
+    const otherItems = items.filter((i) => i.parentId !== parentId)
+    setItems([...otherItems, ...reorderedWithOrder])
+    setDraggingChild(null)
+    setDragOverChild(null)
+
+    // Simpan ke DB
+    setSaving(true)
+    const res = await reorderSubmenuItemsAction(reorderedWithOrder.map((i) => i.id))
+    setSaving(false)
+    if (res.success) toast.success('Urutan submenu disimpan')
+    else {
+      toast.error('Gagal')
       setItems(initialItems)
     }
   }
@@ -105,17 +150,15 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
     const res = await toggleMenuItemAction(id, !current)
     if (res.success) {
       setItems((prev) => prev.map((i) => (i.id === id ? { ...i, isActive: !current } : i)))
-      router.refresh()
     } else {
-      toast.error('Gagal mengubah status')
+      toast.error('Gagal')
     }
   }
 
   // ── Delete ───────────────────────────────────────────────
   async function handleDelete(id: number, label: string) {
-    const hasChildren = items.some((i) => i.parentId === id)
-    if (hasChildren) {
-      toast.error('Hapus submenu terlebih dahulu sebelum menghapus parent')
+    if (items.some((i) => i.parentId === id)) {
+      toast.error('Hapus submenu terlebih dahulu')
       return
     }
     if (!confirm(`Hapus "${label}"?`)) return
@@ -123,47 +166,39 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
     if (res.success) {
       setItems((prev) => prev.filter((i) => i.id !== id))
       toast.success('Item dihapus')
-      router.refresh()
     } else {
-      toast.error('Gagal menghapus')
+      toast.error('Gagal')
     }
   }
 
-  // ── Row renderer ─────────────────────────────────────────
-  function renderItem(item: MenuItem, isChild = false) {
+  // ── Render parent + children ─────────────────────────────
+  function renderParent(item: MenuItem) {
     const children = getChildren(item.id)
     const hasChildren = children.length > 0
 
     return (
       <div key={item.id}>
+        {/* Parent row */}
         <div
-          draggable={!isChild}
-          onDragStart={() => !isChild && handleDragStart(item.id)}
-          onDragOver={(e) => !isChild && handleDragOver(e, item.id)}
-          onDrop={() => !isChild && handleDrop(item.id)}
+          draggable
+          onDragStart={() => setDragging(item.id)}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(item.id)
+          }}
+          onDrop={() => handleParentDrop(item.id)}
           onDragEnd={() => {
             setDragging(null)
             setDragOver(null)
           }}
           className={cn(
             'flex items-center gap-3 px-4 py-3 transition-colors',
-            isChild && 'border-l-2 border-slate-200 bg-slate-50 pl-12',
-            !isChild && dragging === item.id && 'opacity-40',
-            !isChild &&
-              dragOver === item.id &&
-              dragging !== item.id &&
-              'bg-navy-50 border-navy-500 border-l-2',
+            dragging === item.id && 'opacity-40',
+            dragOver === item.id && dragging !== item.id && 'bg-navy-50 border-navy-500 border-l-2',
             !item.isActive && 'opacity-50'
           )}
         >
-          {/* Drag handle — hanya parent */}
-          {!isChild ? (
-            <GripVertical className="text-muted-foreground h-4 w-4 shrink-0 cursor-grab active:cursor-grabbing" />
-          ) : (
-            <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-          )}
-
-          {/* Info */}
+          <GripVertical className="text-muted-foreground h-4 w-4 shrink-0 cursor-grab" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="truncate text-sm font-medium">{item.label}</span>
@@ -185,20 +220,17 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
             </div>
             <p className="text-muted-foreground mt-0.5 truncate text-xs">{item.url}</p>
           </div>
-
-          {/* Actions */}
           <div className="flex shrink-0 items-center gap-1">
-            {/* Tambah submenu — hanya untuk main_nav dan parent item */}
-            {location === 'main_nav' && !isChild && (
+            {location === 'main_nav' && (
               <Button
                 variant="ghost"
                 size="icon-sm"
                 title="Tambah Submenu"
+                className="text-navy-500 hover:text-navy-700"
                 onClick={() => {
                   setCreateParentId(item.id)
                   setShowCreate(true)
                 }}
-                className="text-navy-500 hover:text-navy-700"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -225,12 +257,78 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
           </div>
         </div>
 
-        {/* Render children */}
-        {children.length > 0 && (
-          <div className="divide-y border-b">
-            {children
-              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-              .map((child) => renderItem(child, true))}
+        {/* Children rows — drag independen dari parent */}
+        {hasChildren && (
+          <div className="divide-y border-b bg-slate-50/60">
+            {children.map((child) => (
+              <div
+                key={child.id}
+                draggable
+                onDragStart={(e) => {
+                  e.stopPropagation()
+                  setDraggingChild(child.id)
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (dragOverChild !== child.id) setDragOverChild(child.id)
+                }}
+                onDrop={(e) => {
+                  e.stopPropagation()
+                  // Kirim sourceChildId eksplisit — bukan dari state yang mungkin stale
+                  const src = draggingChild
+                  if (src !== null) handleChildDrop(item.id, child.id, src)
+                }}
+                onDragEnd={(e) => {
+                  e.stopPropagation()
+                  setDraggingChild(null)
+                  setDragOverChild(null)
+                }}
+                className={cn(
+                  'flex items-center gap-3 py-2.5 pr-4 pl-10 transition-colors',
+                  draggingChild === child.id && 'opacity-40',
+                  dragOverChild === child.id &&
+                    draggingChild !== child.id &&
+                    'border-l-2 border-orange-400 bg-orange-50',
+                  !child.isActive && 'opacity-50'
+                )}
+              >
+                <GripVertical className="text-muted-foreground h-3.5 w-3.5 shrink-0 cursor-grab" />
+                <ChevronRight className="h-3 w-3 shrink-0 text-slate-300" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-xs font-medium">{child.label}</span>
+                    {!child.isActive && (
+                      <Badge variant="secondary" className="px-1 py-0 text-[10px]">
+                        Nonaktif
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground truncate text-[11px]">{child.url}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleToggle(child.id, child.isActive ?? true)}
+                    className={child.isActive ? 'text-green-600' : 'text-muted-foreground'}
+                  >
+                    {child.isActive ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" onClick={() => setEditItem(child)}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(child.id, child.label)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -243,8 +341,8 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
         <div>
           <p className="text-navy-800 text-sm font-medium">{MENU_LOCATIONS[location]}</p>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            {parentItems.length} item · seret untuk mengubah urutan
-            {location === 'main_nav' && ' · klik + pada item untuk menambah submenu'}
+            {parentItems.length} item · seret ☰ untuk mengubah urutan
+            {location === 'main_nav' && ' · submenu juga bisa diurutkan'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -276,13 +374,12 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
             <div className="divide-y">
               {parentItems
                 .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                .map((item) => renderItem(item))}
+                .map((item) => renderParent(item))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Dialog tambah */}
       <MenuItemDialog
         open={showCreate}
         onOpenChange={(o) => {
@@ -294,11 +391,8 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
         parentItems={parentItems}
         onSuccess={(newItem) => {
           setItems((prev) => [...prev, newItem])
-          router.refresh()
         }}
       />
-
-      {/* Dialog edit */}
       {editItem && (
         <MenuItemDialog
           open={!!editItem}
@@ -309,7 +403,6 @@ export function MenuLocationPanel({ location, items: initialItems }: Props) {
           onSuccess={(updated) => {
             setItems((prev) => prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i)))
             setEditItem(null)
-            router.refresh()
           }}
         />
       )}
