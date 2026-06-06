@@ -1,7 +1,6 @@
 // src/components/shared/news-card.tsx
 import Link from 'next/link'
 import Image from 'next/image'
-import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@components/ui/badge'
 import { formatDate } from '@lib/utils'
 import { cn } from '@lib/utils'

@@ -1,5 +1,5 @@
 // database/schema/services.ts
-import { mysqlTable, varchar, text, int, boolean, datetime, index } from 'drizzle-orm/mysql-core'
+import { mysqlTable, varchar, int, boolean, datetime, index } from 'drizzle-orm/mysql-core'
 import { sql } from 'drizzle-orm'
 
 export const services = mysqlTable(

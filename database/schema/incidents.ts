@@ -11,7 +11,6 @@ import {
   mysqlEnum,
   decimal,
   index,
-  primaryKey,
 } from 'drizzle-orm/mysql-core'
 import { sql, relations } from 'drizzle-orm'
 import { users } from './users'

@@ -6,7 +6,6 @@ import {
   boolean,
   datetime,
   mysqlEnum,
-  bigint,
   index,
 } from 'drizzle-orm/mysql-core'
 import { sql, relations } from 'drizzle-orm'

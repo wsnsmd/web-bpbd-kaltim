@@ -180,7 +180,10 @@ export function GaleriAlbumClient({ albumType, photos, videos }: Props) {
       {/* Lightbox Foto */}
       <Dialog open={!!lightboxPhoto} onOpenChange={(o) => !o && setLightboxPhoto(null)}>
         <DialogContent
-          className="bg-navy-900/60 w-full max-w-[90vw] rounded-lg border-0 shadow-none"
+          className={cn(
+            'bg-navy-900/60 border-none shadow-none',
+            'max-w-[90vw] sm:max-w-[90vw] md:max-w-[90vw] lg:max-w-[90vw]'
+          )}
           showCloseButton={false}
         >
           <VisuallyHidden.Root>
@@ -279,7 +282,10 @@ export function GaleriAlbumClient({ albumType, photos, videos }: Props) {
       {/* Lightbox Video */}
       <Dialog open={!!lightboxVideo} onOpenChange={(o) => !o && setLightboxVideo(null)}>
         <DialogContent
-          className="bg-navy-900/60 w-full max-w-[90vw] rounded-lg border-0 shadow-none"
+          className={cn(
+            'bg-navy-900/60 border-none shadow-none',
+            'max-w-[90vw] sm:max-w-[90vw] md:max-w-[90vw] lg:max-w-[90vw]'
+          )}
           showCloseButton={false}
         >
           <VisuallyHidden.Root>

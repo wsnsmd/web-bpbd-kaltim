@@ -7,6 +7,7 @@ import { GeneralSettingsForm } from './_components/general-settings-form'
 import { ContactSettingsForm } from './_components/contact-settings-form'
 import { SeoSettingsForm } from './_components/seo-settings-form'
 import { MediaSettingsForm } from './_components/media-settings-form'
+import { OperationalSettingsForm } from './_components/operational-settings-form'
 import { DEFAULT_SETTINGS } from '@db/schema/settings'
 
 export const metadata = { title: 'Pengaturan Situs' }
@@ -14,8 +15,6 @@ export const metadata = { title: 'Pengaturan Situs' }
 export default async function SettingsPage() {
   const rows = await db.select().from(siteSettings)
   const saved = Object.fromEntries(rows.map((r) => [r.key, r.value ?? '']))
-
-  // Merge default dengan yang tersimpan di DB
   const settings = { ...DEFAULT_SETTINGS, ...saved }
 
   return (
@@ -31,6 +30,7 @@ export default async function SettingsPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="general">Umum</TabsTrigger>
           <TabsTrigger value="contact">Kontak & Sosial</TabsTrigger>
+          <TabsTrigger value="operational">Operasional</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="media">Media</TabsTrigger>
         </TabsList>
@@ -59,6 +59,21 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent>
               <ContactSettingsForm settings={settings} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="operational">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pengaturan Operasional</CardTitle>
+              <CardDescription>
+                Status kondisi wilayah dan konfigurasi data cuaca BMKG yang tampil di status bar
+                beranda.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OperationalSettingsForm settings={settings} />
             </CardContent>
           </Card>
         </TabsContent>

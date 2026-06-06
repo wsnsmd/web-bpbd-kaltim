@@ -1,6 +1,7 @@
 // src/app/(public)/layout.tsx
 import Header from '@components/layout/header'
 import Footer from '@components/layout/footer'
+import { ScrollToTop } from '@/components/scroll-to-top'
 import { EmergencyTicker } from '@components/shared/emergency-ticker'
 import { Phone } from 'lucide-react'
 import Link from 'next/link'
@@ -15,19 +16,20 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
       <Footer />
+      <ScrollToTop />
 
       {/* Floating Action Button — hanya mobile */}
-      <Link
+      {/* <Link
         href="tel:112"
         aria-label="Hubungi Call Center Darurat 112"
         className={cn(
-          'fixed right-6 bottom-6 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all md:hidden',
+          'fixed right-10 bottom-10 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all md:hidden',
           'bg-orange-500 hover:bg-orange-600',
           'animate-pulse shadow-[0_4px_16px_rgba(232,80,0,0.4)]'
         )}
       >
         <Phone className="h-6 w-6" />
-      </Link>
+      </Link> */}
     </>
   )
 }

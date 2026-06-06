@@ -1,7 +1,7 @@
 // lib/queries/news.ts
 import { db } from '@lib/db'
 import { news, users, newsCategories } from '@db/schema'
-import { eq, desc, and, isNotNull } from 'drizzle-orm'
+import { eq, desc, and } from 'drizzle-orm'
 
 export async function getPublishedNews(limit?: number) {
   const query = db

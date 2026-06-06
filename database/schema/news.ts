@@ -60,7 +60,7 @@ export const news = mysqlTable(
   })
 )
 
-export const newsRelations = relations(news, ({ one, many }) => ({
+export const newsRelations = relations(news, ({ one }) => ({
   author: one(users, { fields: [news.authorId], references: [users.id] }),
   category: one(newsCategories, {
     fields: [news.categoryId],

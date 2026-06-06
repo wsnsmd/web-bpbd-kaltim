@@ -22,7 +22,7 @@ export default function HomePage() {
       <HeroSection />
       <StatusBar />
       <InstansiBar />
-      <KpiSection />
+      {/* <KpiSection /> */}
       <LayananSection />
       <NewsSectionWrapper />
       <MapSection />

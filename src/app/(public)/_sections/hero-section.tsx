@@ -22,6 +22,7 @@ async function getHeroSettings() {
     ctaSecondaryHref: map.hero_cta_secondary_href || '#peta',
     bgImage: map.hero_bg_image || '',
     statusText: map.hero_status_text || 'Kondisi Wilayah: Normal & Aman',
+    statusWilayah: map.status_wilayah || 'aman',
   }
 }
 
@@ -33,6 +34,36 @@ export async function HeroSection() {
   const titleLines = s.title.split('\n')
   const titleLine1 = titleLines[0] ?? ''
   const titleLine2 = titleLines[1] ?? ''
+
+  const STATUS_HERO_CONFIG = {
+    aman: {
+      label: 'Status Siaga',
+      dot: 'text-green-400',
+      ring: 'border-green-400/40 bg-green-400/10',
+      icon: 'text-green-400',
+    },
+    waspada: {
+      label: 'Waspada',
+      dot: 'text-yellow-400',
+      ring: 'border-yellow-400/40 bg-yellow-400/10',
+      icon: 'text-yellow-400',
+    },
+    siaga: {
+      label: 'Siaga',
+      dot: 'text-orange-400',
+      ring: 'border-orange-400/40 bg-orange-400/10',
+      icon: 'text-orange-400',
+    },
+    tanggap: {
+      label: 'Tanggap Darurat',
+      dot: 'text-red-400',
+      ring: 'border-red-400/40 bg-red-400/10',
+      icon: 'text-red-400',
+    },
+  }
+  const stCfg =
+    STATUS_HERO_CONFIG[s.statusWilayah as keyof typeof STATUS_HERO_CONFIG] ??
+    STATUS_HERO_CONFIG.aman
 
   return (
     <section className="bg-navy-500 relative flex min-h-[95vh] flex-col justify-center overflow-hidden">
@@ -170,27 +201,6 @@ export async function HeroSection() {
               <AlertTriangle className="h-4 w-4" />
               Darurat 112
             </Link>
-          </div>
-
-          {/* Status widget kecil */}
-          <div
-            className="animate-fade-up inline-flex items-center gap-3 rounded-2xl border px-5 py-3"
-            style={{
-              background: 'rgba(255,255,255,.05)',
-              borderColor: 'rgba(255,255,255,.1)',
-              animationDelay: '240ms',
-            }}
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-400/40 bg-green-400/10">
-              <Shield className="h-4 w-4 text-green-400" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold tracking-wider text-green-400 uppercase">
-                Status Siaga
-              </p>
-              <p className="text-navy-300 text-xs">{s.statusText}</p>
-            </div>
-            <ChevronRight className="text-navy-500 ml-2 h-4 w-4" />
           </div>
         </div>
       </div>
