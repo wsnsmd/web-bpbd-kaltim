@@ -1,5 +1,4 @@
 // src/app/(public)/search/page.tsx
-import { Suspense } from 'react'
 import { db } from '@/lib/db'
 import { incidents, news, newsCategories, downloads, regions } from '@db/schema'
 import { eq, like, desc, and, or, count } from 'drizzle-orm'

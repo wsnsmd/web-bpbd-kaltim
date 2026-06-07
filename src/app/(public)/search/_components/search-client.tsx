@@ -1,8 +1,8 @@
 // src/app/(public)/search/_components/search-client.tsx
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { useTransition } from 'react'
 import Link from 'next/link'
 import {
   Search,
