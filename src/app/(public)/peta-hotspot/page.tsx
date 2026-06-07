@@ -6,7 +6,7 @@ import { db } from '@/lib/db'
 import { siteSettings } from '@db/schema'
 
 export const metadata = {
-  title: 'Peta Sebaran Hotspot — BPBD Kaltim',
+  title: 'Peta Sebaran Hotspot',
   description: 'Peta sebaran titik api (hotspot) karhutla di Kalimantan Timur.',
 }
 

@@ -14,7 +14,7 @@ import { alias } from 'drizzle-orm/mysql-core'
 import { PetaBencanaClient } from './_components/peta-bencana-client'
 
 export const metadata = {
-  title: 'Peta Bencana — BPBD Kaltim',
+  title: 'Peta Bencana',
   description: 'Peta sebaran kejadian bencana di Provinsi Kalimantan Timur.',
 }
 

@@ -68,7 +68,7 @@ export default async function CategoriesPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span
-                        className="h-3 w-3 flex-shrink-0 rounded-full"
+                        className="h-3 w-3 shrink-0 rounded-full"
                         style={{ background: row.color ?? '#1b56a8' }}
                       />
                       <span className="text-sm font-medium">{row.name}</span>

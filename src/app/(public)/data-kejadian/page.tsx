@@ -9,7 +9,7 @@ import { alias } from 'drizzle-orm/mysql-core'
 import { DataKejadianClient } from './_components/data-kejadian-client'
 
 export const metadata = {
-  title: 'Data Kejadian Bencana — BPBD Kaltim',
+  title: 'Data Kejadian Bencana',
   description: 'Data lengkap kejadian bencana di Provinsi Kalimantan Timur.',
 }
 

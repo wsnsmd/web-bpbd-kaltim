@@ -8,7 +8,7 @@ import { eq, asc, count } from 'drizzle-orm'
 import { ChevronRight, Images, Film, LayoutGrid, Camera } from 'lucide-react'
 
 export const metadata = {
-  title: 'Galeri & Dokumentasi — BPBD Kaltim',
+  title: 'Galeri & Dokumentasi',
   description: 'Dokumentasi foto dan video kegiatan BPBD Provinsi Kalimantan Timur.',
 }
 

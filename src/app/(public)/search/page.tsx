@@ -9,7 +9,7 @@ import { Search } from 'lucide-react'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Pencarian — BPBD Kaltim',
+  title: 'Pencarian',
   description: 'Cari informasi kejadian bencana, berita, dan unduhan di BPBD Kalimantan Timur.',
 }
 

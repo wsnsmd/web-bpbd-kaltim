@@ -11,7 +11,7 @@ import { Calendar, Eye, ChevronRight, Newspaper } from 'lucide-react'
 import { CategoryFilter } from './_components/category-filter'
 
 export const metadata = {
-  title: 'Berita & Kegiatan — BPBD Kaltim',
+  title: 'Berita & Kegiatan',
   description: 'Informasi terkini seputar kebencanaan dan kegiatan BPBD Provinsi Kalimantan Timur.',
 }
 

@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 import { DownloadSearch } from './_components/download-search'
 
 export const metadata = {
-  title: 'Download Center — BPBD Kaltim',
+  title: 'Download Center',
   description:
     'Unduh dokumen, laporan, regulasi, SOP, dan panduan resmi BPBD Provinsi Kalimantan Timur.',
 }

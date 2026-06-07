@@ -7,7 +7,7 @@ import { alias } from 'drizzle-orm/mysql-core'
 import { StatistikClient } from './_components/statistik-client'
 
 export const metadata = {
-  title: 'Statistik Bencana — BPBD Kaltim',
+  title: 'Statistik Bencana',
   description: 'Data statistik kejadian bencana di Provinsi Kalimantan Timur.',
 }
 

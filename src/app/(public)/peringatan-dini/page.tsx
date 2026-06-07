@@ -7,7 +7,7 @@ import { CuacaGrid } from './_components/cuaca-grid'
 import { Button } from '@/components/ui/button'
 
 export const metadata = {
-  title: 'Peringatan Dini Cuaca — BPBD Kaltim',
+  title: 'Peringatan Dini Cuaca',
   description:
     'Informasi prakiraan cuaca dan peringatan dini 10 kab/kota Kalimantan Timur dari BMKG.',
 }

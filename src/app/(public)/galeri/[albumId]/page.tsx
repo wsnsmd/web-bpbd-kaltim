@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props) {
     .from(galleryAlbums)
     .where(eq(galleryAlbums.id, Number(albumId)))
   return {
-    title: album ? `${album.title} — Galeri BPBD Kaltim` : 'Galeri',
+    title: album ? `${album.title} — Galeri` : 'Galeri',
   }
 }
 

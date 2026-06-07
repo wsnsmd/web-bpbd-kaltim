@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 
 export const metadata = {
-  title: 'Login — Admin BPBD Kaltim',
+  title: 'Login',
 }
 
 export default function LoginPage() {

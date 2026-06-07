@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: Props) {
     .where(eq(news.slug, slug))
   if (!item) return { title: 'Berita tidak ditemukan' }
   return {
-    title: `${item.seoTitle || item.title} — BPBD Kaltim`,
+    title: `${item.seoTitle || item.title}`,
     description: item.seoDescription || item.excerpt || '',
     openGraph: {
       title: item.seoTitle || item.title,
@@ -331,7 +331,7 @@ export default async function BeritaDetailPage({ params }: Props) {
                   },
                 ]
                   .filter(Boolean)
-                   
+
                   .map((row: any, i) => (
                     <div key={i} className="flex items-center justify-between px-5 py-2.5">
                       <span className="text-muted-foreground text-xs">{row.label}</span>

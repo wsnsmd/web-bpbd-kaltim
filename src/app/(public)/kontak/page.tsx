@@ -8,7 +8,7 @@ import { SiFacebook, SiInstagram, SiYoutube, SiX } from 'react-icons/si'
 import { ContactMap } from './_components/contact-map'
 
 export const metadata = {
-  title: 'Kontak — BPBD Kaltim',
+  title: 'Kontak',
   description:
     'Hubungi BPBD Provinsi Kalimantan Timur. Alamat, telepon, email, dan peta lokasi kantor.',
 }

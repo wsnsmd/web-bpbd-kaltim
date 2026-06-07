@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props) {
 
   if (!page) return { title: 'Halaman tidak ditemukan' }
   return {
-    title: `${page.seoTitle || page.title} — BPBD Kaltim`,
+    title: `${page.seoTitle || page.title}`,
     description: page.seoDescription || page.excerpt || '',
     openGraph: {
       title: page.seoTitle || page.title,
