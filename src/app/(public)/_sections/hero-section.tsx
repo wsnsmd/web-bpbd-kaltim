@@ -69,28 +69,28 @@ export async function HeroSection() {
             className="object-cover object-center opacity-25"
             sizes="100vw"
           />
-          <div className="from-navy-950 via-navy-950/60 absolute inset-0 bg-gradient-to-r to-transparent" />
+          <div className="from-navy-950 via-navy-950/60 absolute inset-0 bg-linear-to-r to-transparent" />
         </>
       )}
 
       {/* ── Aurora blobs ── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="absolute -bottom-32 -left-32 h-[600px] w-[600px] rounded-full opacity-[0.22]"
+          className="absolute -bottom-32 -left-32 h-150 w-150 rounded-full opacity-[0.22]"
           style={{
             background: 'radial-gradient(circle, #e85000 0%, transparent 70%)',
             animation: 'blobFloat1 12s ease-in-out infinite',
           }}
         />
         <div
-          className="absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full opacity-[0.15]"
+          className="absolute -top-32 -right-32 h-125 w-125 rounded-full opacity-[0.15]"
           style={{
             background: 'radial-gradient(circle, #1b56a8 0%, transparent 70%)',
             animation: 'blobFloat2 15s ease-in-out infinite',
           }}
         />
         <div
-          className="absolute top-1/2 left-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.06]"
+          className="absolute top-1/2 left-1/2 h-100 w-100 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.06]"
           style={{
             background: 'radial-gradient(circle, #e5aa0d 0%, transparent 70%)',
             animation: 'blobFloat3 18s ease-in-out infinite',
@@ -309,7 +309,7 @@ export async function HeroSection() {
             style={{ animation: 'fadeSlideUp 0.6s 0.25s ease both', opacity: 0 }}
           >
             <div
-              className="h-px max-w-[72px] flex-1"
+              className="h-px max-w-18 flex-1"
               style={{ background: 'linear-gradient(90deg, #e85000, transparent)' }}
             />
             <div className="h-1 w-1 rounded-full bg-orange-500" />
@@ -333,7 +333,7 @@ export async function HeroSection() {
                 href={s.ctaPrimaryHref}
                 className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-orange-500/40"
               >
-                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+                <span className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
                 <LayoutList className="h-4 w-4" />
                 {s.ctaPrimaryLabel}
               </Link>

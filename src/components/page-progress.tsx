@@ -59,10 +59,7 @@ function PageProgressInner() {
   return (
     <>
       {/* ── Progress bar utama ── */}
-      <div
-        className="fixed top-0 right-0 left-0 z-[9999] h-[3px]"
-        style={{ pointerEvents: 'none' }}
-      >
+      <div className="fixed top-0 right-0 left-0 z-9999 h-0.75" style={{ pointerEvents: 'none' }}>
         {/* Track */}
         <div className="absolute inset-0 bg-orange-500/10" />
 
@@ -80,7 +77,7 @@ function PageProgressInner() {
         >
           {/* Leading glow dot */}
           <div
-            className="absolute top-1/2 right-0 h-[10px] w-[10px] -translate-y-1/2 rounded-full"
+            className="absolute top-1/2 right-0 h-2.5 w-2.5 -translate-y-1/2 rounded-full"
             style={{
               background: '#fbbf24',
               boxShadow: '0 0 10px 3px rgba(251,191,36,0.8), 0 0 20px 6px rgba(232,80,0,0.4)',

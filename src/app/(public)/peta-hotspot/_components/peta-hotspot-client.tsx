@@ -444,7 +444,7 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
 
         {/* Popup detail */}
         {selected && (
-          <div className="absolute bottom-8 left-1/2 z-10 w-72 -translate-x-1/2 rounded-2xl bg-white p-4 shadow-2xl md:left-4 md:translate-x-0">
+          <div className="absolute top-2 left-1/2 z-10 w-72 -translate-x-1/2 rounded-2xl bg-white p-4 shadow-2xl md:left-4 md:translate-x-0">
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
                 <div className="mb-1 flex items-center gap-1.5">
