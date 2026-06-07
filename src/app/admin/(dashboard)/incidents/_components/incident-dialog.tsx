@@ -210,6 +210,7 @@ export function IncidentDialog({
 
   useEffect(() => {
     if (open && item) {
+      console.log('Item received: ', item)
       form.reset({
         title: item.title ?? '',
         disasterTypeId: item.disasterTypeId,
@@ -236,7 +237,7 @@ export function IncidentDialog({
       form.reset()
     }
     setTab('utama')
-  }, [open, item])
+  }, [open, item, form])
 
   const { isSubmitting } = form.formState
 
@@ -273,7 +274,10 @@ export function IncidentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-4xl">
+      <DialogContent
+        className="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-4xl"
+        aria-describedby={undefined}
+      >
         <DialogHeader className="border-b px-6 pt-6 pb-4">
           <DialogTitle>{isEdit ? 'Edit Kejadian Bencana' : 'Tambah Kejadian Bencana'}</DialogTitle>
           {/* Summary korban realtime */}

@@ -9,4 +9,4 @@ export * from './services'
 export * from './gallery'
 export * from './downloads'
 export * from './incidents'
-// Nanti ditambah: disasters, logistics, complaints, downloads, pages
+export * from './analytics'

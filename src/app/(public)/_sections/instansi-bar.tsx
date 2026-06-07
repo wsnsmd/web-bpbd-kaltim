@@ -8,6 +8,7 @@ import { getMenuItems } from '@/lib/menu'
 // Render icon Lucide dari nama string — fallback ke Building2
 function DynamicIcon({ name, className }: { name: string | null; className?: string }) {
   if (!name) return <Building2 className={className} />
+   
   const Icon = (LucideIcons as any)[name]
   if (!Icon) return <Building2 className={className} />
   return <Icon className={className} />

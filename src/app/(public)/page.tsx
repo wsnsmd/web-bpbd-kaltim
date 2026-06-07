@@ -2,7 +2,7 @@
 import { HeroSection } from './_sections/hero-section'
 import { StatusBar } from './_sections/status-bar'
 import { InstansiBar } from './_sections/instansi-bar'
-import { KpiSection } from './_sections/kpi-section'
+// import { KpiSection } from './_sections/kpi-section'
 import { LayananSection } from './_sections/layanan-section'
 import { NewsSectionWrapper } from './_sections/news-section'
 import { MapSection } from './_sections/map-section'

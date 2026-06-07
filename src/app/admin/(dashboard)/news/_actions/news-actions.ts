@@ -4,7 +4,7 @@
 import { db } from '@/lib/db'
 import { news, newsCategories } from '@db/schema'
 import { auth } from '@/lib/auth'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 

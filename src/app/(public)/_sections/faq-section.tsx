@@ -10,17 +10,27 @@ import { db } from '@/lib/db'
 import { siteSettings } from '@db/schema'
 import { eq } from 'drizzle-orm'
 
+// Definisikan tipe untuk FAQ item
+interface FaqItem {
+  id?: string | number
+  q: string
+  a: string
+  isActive?: boolean
+  order?: number
+}
+
 export async function FaqSection() {
   noStore() // Selalu fetch fresh, tidak pakai Data Cache
 
   const [row] = await db.select().from(siteSettings).where(eq(siteSettings.key, 'faq_items'))
 
-  const faqs = (() => {
+  const faqs: FaqItem[] = (() => {
     if (!row?.value) return []
     try {
-      return JSON.parse(row.value)
-        .filter((i: any) => i.isActive !== false)
-        .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+      const parsed = JSON.parse(row.value) as FaqItem[]
+      return parsed
+        .filter((i) => i.isActive !== false)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     } catch {
       return []
     }
@@ -46,10 +56,10 @@ export async function FaqSection() {
 
         <div className="mx-auto max-w-4xl">
           <Accordion type="single" collapsible className="grid gap-4 md:grid-cols-2">
-            {faqs.map((faq: any, i: number) => (
+            {faqs.map((faq, i) => (
               <AccordionItem
                 key={faq.id ?? i}
-                value={faq.id ?? `item-${i}`}
+                value={String(faq.id ?? `item-${i}`)}
                 className="border-border bg-card hover:border-navy-300 rounded-xl border px-4 transition-all"
               >
                 <AccordionTrigger className="text-navy-800 data-[state=open]:text-navy-600 py-4 text-[13px] font-semibold hover:no-underline">

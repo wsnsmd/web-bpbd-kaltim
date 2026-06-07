@@ -331,6 +331,7 @@ export default async function BeritaDetailPage({ params }: Props) {
                   },
                 ]
                   .filter(Boolean)
+                   
                   .map((row: any, i) => (
                     <div key={i} className="flex items-center justify-between px-5 py-2.5">
                       <span className="text-muted-foreground text-xs">{row.label}</span>

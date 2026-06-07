@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { galleryAlbums, galleryItems } from '@db/schema'
 import { eq, and, asc } from 'drizzle-orm'
-import { ChevronRight, Camera, Film, LayoutGrid } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { GaleriAlbumClient } from './_components/galeri-album-client'
 
 interface Props {

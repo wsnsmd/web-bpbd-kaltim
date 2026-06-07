@@ -7,7 +7,6 @@ import {
   int,
   primaryKey,
   index,
-  timestamp,
 } from 'drizzle-orm/mysql-core'
 import { relations, sql } from 'drizzle-orm'
 

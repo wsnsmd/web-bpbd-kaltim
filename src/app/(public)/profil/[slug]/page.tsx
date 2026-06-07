@@ -1,7 +1,7 @@
 // src/app/(public)/profil/[slug]/page.tsx
 // Render halaman statis dari CMS untuk semua profil kecuali struktur-organisasi
 import { unstable_noStore as noStore } from 'next/cache'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { db } from '@/lib/db'
 import { pages, users } from '@db/schema'

@@ -12,12 +12,6 @@ export const metadata = {
   description: 'Dokumentasi foto dan video kegiatan BPBD Provinsi Kalimantan Timur.',
 }
 
-function getYoutubeThumbnail(url: string | null): string | null {
-  if (!url) return null
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
-  return match ? `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg` : null
-}
-
 const TYPE_ICON = { photo: Camera, video: Film, mixed: LayoutGrid }
 const TYPE_LABEL = { photo: 'Foto', video: 'Video', mixed: 'Campuran' }
 

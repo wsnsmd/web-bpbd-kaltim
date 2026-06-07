@@ -1,21 +1,18 @@
 // src/app/(public)/data-kejadian/_components/data-kejadian-client.tsx
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Search,
   X,
   Filter,
   MapPin,
-  Clock,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Download,
   Eye,
-  Users,
-  Home,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

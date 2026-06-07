@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { db } from '@/lib/db'
 import { incidents, disasterTypes, regions, incidentVictims, incidentDamages } from '@db/schema'
-import { eq, desc, count, sum } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/mysql-core'
 import { DataKejadianClient } from './_components/data-kejadian-client'
 

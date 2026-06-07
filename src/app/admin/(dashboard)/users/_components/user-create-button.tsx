@@ -25,7 +25,7 @@ export function UserCreateButton() {
     if (open && roles.length === 0) {
       getRolesAction().then(setRoles)
     }
-  }, [open])
+  }, [open, roles.length])
 
   async function handleSubmit(values: any) {
     const res = await createUserAction(values)

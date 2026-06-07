@@ -31,7 +31,7 @@ export function UserEditButton({ user }: Props) {
         setRoles(r)
       })
     }
-  }, [open])
+  }, [open, roles.length])
 
   async function handleSubmit(values: any) {
     const res = await updateUserAction(user.id, values)

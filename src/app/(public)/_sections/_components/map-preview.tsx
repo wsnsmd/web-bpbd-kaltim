@@ -70,6 +70,9 @@ export function MapPreview({
     mapRef.current = map
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
 
+    // Store current markers reference untuk cleanup
+    const currentMarkers = markersRef.current
+
     map.on('load', () => {
       // GeoJSON source
       const geojson: GeoJSON.FeatureCollection = {
@@ -166,15 +169,15 @@ export function MapPreview({
           .setLngLat([incident.longitude, incident.latitude])
           .addTo(map)
 
-        markersRef.current.set(incident.id, marker)
+        currentMarkers.set(incident.id, marker)
       })
 
-      // Sinkronisasi marker vs cluster — sama persis dengan peta-bencana-client
-      map.on('render', () => {
+      // Sinkronisasi marker vs cluster
+      const handleRender = () => {
         if (!map.isStyleLoaded() || !map.getSource('preview-incidents')) return
 
         // Sembunyikan semua
-        markersRef.current.forEach((marker) => {
+        currentMarkers.forEach((marker) => {
           marker.getElement().style.display = 'none'
         })
 
@@ -182,11 +185,13 @@ export function MapPreview({
         map.queryRenderedFeatures({ layers: ['preview-unclustered'] }).forEach((feature) => {
           const id = feature.properties?.id
           if (id !== undefined) {
-            const marker = markersRef.current.get(Number(id))
+            const marker = currentMarkers.get(Number(id))
             if (marker) marker.getElement().style.display = 'block'
           }
         })
-      })
+      }
+
+      map.on('render', handleRender)
 
       // Klik cluster → zoom in
       map.on('click', 'preview-clusters', (e) => {
@@ -211,12 +216,17 @@ export function MapPreview({
       })
     })
 
+    // Cleanup - menggunakan currentMarkers yang sudah disimpan
     return () => {
-      map.remove()
-      mapRef.current = null
-      markersRef.current.clear()
+      currentMarkers.forEach((marker) => marker.remove())
+      currentMarkers.clear()
+
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
     }
-  }, [token])
+  }, [token, centerLat, centerLng, incidents])
 
   if (!token) {
     return (

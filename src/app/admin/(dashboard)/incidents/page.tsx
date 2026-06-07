@@ -1,7 +1,14 @@
 // src/app/admin/(dashboard)/incidents/page.tsx
 import { db } from '@/lib/db'
-import { incidents, disasterTypes, disasterCauses, regions } from '@db/schema'
-import { eq, desc, and } from 'drizzle-orm'
+import {
+  incidents,
+  disasterTypes,
+  disasterCauses,
+  regions,
+  incidentVictims,
+  incidentDamages,
+} from '@db/schema'
+import { eq, desc } from 'drizzle-orm'
 import { IncidentsPanel } from './_components/incidents-panel'
 
 export const metadata = { title: 'Kejadian Bencana — Admin' }
@@ -18,7 +25,9 @@ export default async function IncidentsPage() {
         disasterTypeIcon: disasterTypes.icon,
         disasterTypeColor: disasterTypes.color,
         causeId: incidents.causeId,
+        causeDetail: incidents.causeDetail,
         source: incidents.source,
+        description: incidents.description,
         occurredDate: incidents.occurredDate,
         occurredTime: incidents.occurredTime,
         regencyId: incidents.regencyId,
@@ -31,9 +40,9 @@ export default async function IncidentsPage() {
         status: incidents.status,
         currentCondition: incidents.currentCondition,
         currentEffort: incidents.currentEffort,
-        description: incidents.description,
         isPublished: incidents.isPublished,
         createdAt: incidents.createdAt,
+        updatedAt: incidents.updatedAt,
       })
       .from(incidents)
       .leftJoin(disasterTypes, eq(incidents.disasterTypeId, disasterTypes.id))
@@ -60,6 +69,68 @@ export default async function IncidentsPage() {
       .orderBy(disasterCauses.name),
   ])
 
+  const itemsWithDetails = await Promise.all(
+    items.map(async (item) => {
+      const victims = await db
+        .select()
+        .from(incidentVictims)
+        .where(eq(incidentVictims.incidentId, item.id))
+
+      const damages = await db
+        .select()
+        .from(incidentDamages)
+        .where(eq(incidentDamages.incidentId, item.id))
+
+      return {
+        id: item.id,
+        title: item.title ?? '',
+        disasterTypeId: item.disasterTypeId,
+        disasterTypeName: item.disasterTypeName,
+        disasterTypeIcon: item.disasterTypeIcon,
+        disasterTypeColor: item.disasterTypeColor,
+        causeId: item.causeId,
+        causeDetail: item.causeDetail,
+        source: item.source,
+        description: item.description,
+        occurredDate: item.occurredDate
+          ? new Date(item.occurredDate).toISOString().slice(0, 10)
+          : null,
+        occurredTime: item.occurredTime,
+        regencyId: item.regencyId,
+        regencyName: item.regencyName,
+        districtId: item.districtId,
+        villageName: item.villageName,
+        addressDetail: item.addressDetail,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        status: item.status ?? 'aktif', // ← Pastikan tidak null
+        currentCondition: item.currentCondition,
+        currentEffort: item.currentEffort,
+        isPublished: item.isPublished ?? true,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        victims: victims.map((v) => ({
+          id: v.id,
+          incidentId: v.incidentId,
+          impactType: v.impactType,
+          ageGroup: v.ageGroup,
+          countMale: v.countMale ?? 0,
+          countFemale: v.countFemale ?? 0,
+          countTotal: v.countTotal,
+        })),
+        damages: damages.map((d) => ({
+          id: d.id,
+          incidentId: d.incidentId,
+          assetName: d.assetName,
+          heavyDamage: d.heavyDamage ?? 0,
+          moderateDamage: d.moderateDamage ?? 0,
+          lightDamage: d.lightDamage ?? 0,
+          estimatedLoss: Number(d.estimatedLoss) ?? 0,
+        })),
+      }
+    })
+  )
+
   return (
     <div className="space-y-6">
       <div>
@@ -69,14 +140,7 @@ export default async function IncidentsPage() {
         </p>
       </div>
       <IncidentsPanel
-        initialItems={
-          items.map((i) => ({
-            ...i,
-            occurredDate: i.occurredDate
-              ? new Date(i.occurredDate).toISOString().slice(0, 10)
-              : null,
-          })) as any
-        }
+        initialItems={itemsWithDetails as any}
         disasterTypes={types}
         kabkotas={kabkotas}
         causes={causes}

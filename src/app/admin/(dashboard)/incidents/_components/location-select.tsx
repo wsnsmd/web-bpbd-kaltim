@@ -70,7 +70,7 @@ export function LocationSelect({
       }
       mountedKabkota.current = true
     })
-  }, [kabkotaId])
+  }, [kabkotaId, onKecamatanChange, onVillageNameChange])
 
   // Load kelurahan saat kecamatan berubah
   useEffect(() => {
@@ -91,7 +91,7 @@ export function LocationSelect({
       }
       mountedKecamatan.current = true
     })
-  }, [kecamatanId])
+  }, [kecamatanId, onVillageNameChange])
 
   const hasKelurahan = kelurahans.length > 0
 

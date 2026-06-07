@@ -13,6 +13,7 @@ const getServices = cache(async () => {
 })
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
+   
   const Icon = (LucideIcons as any)[name]
   if (!Icon) return <LucideIcons.Circle className={className} />
   return <Icon className={className} />

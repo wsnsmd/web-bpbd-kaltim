@@ -100,19 +100,16 @@ export function GalleryItemDialog({
       })
       setAutoThumb(getYoutubeThumbnail(item?.videoUrl))
     }
-  }, [open, item])
+  }, [open, item, defaultType, form])
 
   const { isSubmitting } = form.formState
   const watchedType = form.watch('type')
   const watchedVideoUrl = form.watch('videoUrl')
-  const watchedThumb = form.watch('thumbnailUrl')
 
   // Auto-preview thumbnail dari YouTube saat URL berubah
   useEffect(() => {
     setAutoThumb(getYoutubeThumbnail(watchedVideoUrl))
   }, [watchedVideoUrl])
-
-  const displayThumb = watchedThumb || autoThumb
 
   async function onSubmit(values: FormValues) {
     const payload = { ...values, albumId }

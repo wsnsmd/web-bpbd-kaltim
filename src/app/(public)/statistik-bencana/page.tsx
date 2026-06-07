@@ -111,12 +111,6 @@ export default async function StatistikPage() {
   // Tahun tersedia untuk filter
   const availableYears = [...new Set(perTahun.map((t) => Number(t.tahun)))].sort((a, b) => b - a)
 
-  // Per bulan tahun berjalan (default view)
-  const perBulanCurrentYear = Array.from({ length: 12 }, (_, i) => {
-    const found = perBulan.find((b) => Number(b.tahun) === currentYear && Number(b.bulan) === i + 1)
-    return { bulan: i + 1, total: Number(found?.total ?? 0) }
-  })
-
   // Semua data bulan (untuk filter client-side jika perlu)
   const perBulanAll = perBulan.map((b) => ({
     tahun: Number(b.tahun),
@@ -144,7 +138,6 @@ export default async function StatistikPage() {
         color: j.color ?? '#6b7592',
         total: Number(j.total),
       }))}
-      perBulan={perBulanCurrentYear}
       perBulanAll={perBulanAll}
       perTahun={perTahun.map((t) => ({ tahun: Number(t.tahun), total: Number(t.total) }))}
       alamCount={alamCount}

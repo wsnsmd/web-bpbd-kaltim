@@ -1,7 +1,7 @@
 // src/app/(public)/peringatan-dini/_components/cuaca-grid.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Thermometer, Wind, Droplets, Eye, RefreshCw } from 'lucide-react'
 
 interface KotaItem {
@@ -22,6 +22,30 @@ interface CuacaData {
   jangkauPandang: string
   future: { time: string; emoji: string; suhu: number }[]
   lokasi: string
+}
+
+// Definisikan tipe untuk response BMKG
+interface BMKGResponse {
+  lokasi?: {
+    desa?: string
+    kecamatan?: string
+    kota_kab?: string
+  }
+  data?: Array<{
+    cuaca?: Array<Array<BMKGWeatherItem>>
+  }>
+  cuaca?: Array<Array<BMKGWeatherItem>>
+}
+
+interface BMKGWeatherItem {
+  weather?: number
+  t?: number
+  hu?: number
+  ws?: number
+  wd?: string
+  vs_text?: string
+  local_datetime?: string
+  datetime?: string
 }
 
 const WEATHER_MAP: Record<number, { desc: string; emoji: string; warna: string }> = {
@@ -55,13 +79,13 @@ async function fetchCuaca(kode: string): Promise<CuacaData | null> {
     // Gunakan proxy route agar tidak kena CORS/403
     const res = await fetch(`/api/bmkg-cuaca?adm4=${kode}`)
     if (!res.ok) return null
-    const data = await res.json()
+    const data: BMKGResponse = await res.json()
 
     const lokasi = data?.lokasi
-    const cuacaList: any[][] = data?.data?.[0]?.cuaca ?? data?.cuaca ?? []
+    const cuacaList = data?.data?.[0]?.cuaca ?? data?.cuaca ?? []
 
     const now = Date.now()
-    let closest: any = null
+    let closest: BMKGWeatherItem | null = null
     let minDiff = Infinity
     const allItems = cuacaList.flat()
 
@@ -78,19 +102,19 @@ async function fetchCuaca(kode: string): Promise<CuacaData | null> {
       .filter((i) => new Date(i.local_datetime ?? i.datetime ?? '').getTime() > now)
       .slice(0, 3)
       .map((f) => ({
-        time: fmtHour(f.local_datetime ?? f.datetime),
-        emoji: getW(f.weather).emoji,
-        suhu: f.t,
+        time: fmtHour(f.local_datetime ?? f.datetime ?? ''),
+        emoji: getW(f.weather ?? 0).emoji,
+        suhu: f.t ?? 0,
       }))
 
-    const w = getW(closest.weather)
+    const w = getW(closest.weather ?? 0)
     return {
       desc: w.desc,
       emoji: w.emoji,
       warna: w.warna,
-      suhu: closest.t,
-      kelembapan: closest.hu,
-      angin: closest.ws,
+      suhu: closest.t ?? 0,
+      kelembapan: closest.hu ?? 0,
+      angin: closest.ws ?? 0,
       arahAngin: closest.wd ?? '',
       jangkauPandang: closest.vs_text ?? '—',
       future,
@@ -214,7 +238,7 @@ export function CuacaGrid({ kotaList }: { kotaList: KotaItem[] }) {
   )
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setLoading(Object.fromEntries(kotaList.map((k) => [k.kode, true])))
     // Fetch semua serentak
     const results = await Promise.all(
@@ -226,11 +250,12 @@ export function CuacaGrid({ kotaList }: { kotaList: KotaItem[] }) {
     setCuacaMap(Object.fromEntries(results))
     setLoading(Object.fromEntries(kotaList.map((k) => [k.kode, false])))
     setLastUpdate(new Date())
-  }
+  }, [kotaList])
 
   useEffect(() => {
+     
     loadAll()
-  }, [])
+  }, [loadAll])
 
   const isLoadingAny = Object.values(loading).some(Boolean)
 

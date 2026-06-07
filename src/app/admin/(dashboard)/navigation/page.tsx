@@ -1,7 +1,7 @@
 // src/app/admin/(dashboard)/navigation/page.tsx
 import { db } from '@/lib/db'
 import { menuItems } from '@db/schema'
-import { asc, eq } from 'drizzle-orm'
+import { asc } from 'drizzle-orm'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MENU_LOCATIONS } from '@db/schema/navigation'
 import { MenuLocationPanel } from './_components/menu-location-panel'

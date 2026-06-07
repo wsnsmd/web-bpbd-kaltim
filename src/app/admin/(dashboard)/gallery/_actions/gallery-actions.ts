@@ -4,7 +4,7 @@
 import { db } from '@/lib/db'
 import { galleryAlbums, galleryItems } from '@db/schema'
 import { auth } from '@/lib/auth'
-import { eq, asc, desc } from 'drizzle-orm'
+import { eq, asc } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 

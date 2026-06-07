@@ -62,6 +62,9 @@ const MONTH_NAMES = [
   'Desember',
 ]
 
+// Type untuk Lucide icons
+type LucideIconComponent = React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+
 function DynamicIcon({
   name,
   style,
@@ -71,7 +74,16 @@ function DynamicIcon({
   style?: React.CSSProperties
   className?: string
 }) {
-  const Icon = (LucideIcons as any)[name ?? 'FileText'] ?? LucideIcons.FileText
+  const defaultIcon: LucideIconComponent = LucideIcons.FileText
+  let Icon: LucideIconComponent = defaultIcon
+
+  if (name && name in LucideIcons) {
+    const MaybeIcon = (LucideIcons as Record<string, unknown>)[name]
+    if (typeof MaybeIcon === 'function') {
+      Icon = MaybeIcon as LucideIconComponent
+    }
+  }
+
   return <Icon className={className} style={style} />
 }
 
@@ -114,7 +126,7 @@ export default async function UnduhanPage({ searchParams }: Props) {
         .filter(Boolean)
     : DEFAULT_DOWNLOAD_CATEGORIES
 
-  // Kumpulkan tahun & bulan yang tersedia dari data
+  // Kumpulkan tahun yang tersedia dari data
   const availableYears = [
     ...new Set(
       allItems
@@ -122,15 +134,6 @@ export default async function UnduhanPage({ searchParams }: Props) {
         .filter(Boolean) as number[]
     ),
   ].sort((a, b) => b - a)
-  const availableMonths = tahun
-    ? [
-        ...new Set(
-          allItems
-            .filter((d) => d.createdAt && new Date(d.createdAt).getFullYear() === Number(tahun))
-            .map((d) => new Date(d.createdAt!).getMonth() + 1)
-        ),
-      ].sort((a, b) => a - b)
-    : []
 
   // Filter
   let filtered = allItems
@@ -186,7 +189,7 @@ export default async function UnduhanPage({ searchParams }: Props) {
               <p className="mb-2 text-[11px] font-bold tracking-widest text-orange-400 uppercase">
                 Dokumen Publik
               </p>
-              <h1 className="text-3xl leading-none font-black tracking-tight text-white md:text-4xl">
+              <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">
                 Download Center
               </h1>
               <p className="text-navy-300 mt-2 max-w-md text-sm">
@@ -288,7 +291,7 @@ export default async function UnduhanPage({ searchParams }: Props) {
               <Card className="gap-0 overflow-hidden rounded-xl p-0">
                 <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                   <CalendarDays className="text-navy-600 h-4 w-4" />
-                  <h3 className="text-navy-800 text-sm font-bold">Tahun & Bulan</h3>
+                  <h3 className="text-navy-800 text-sm font-bold">Tahun &amp; Bulan</h3>
                 </div>
                 <nav className="space-y-0.5 p-2">
                   {availableYears.map((yr) => {
@@ -393,13 +396,13 @@ export default async function UnduhanPage({ searchParams }: Props) {
               <p className="text-sm text-slate-500">
                 {q ? (
                   <>
-                    <strong className="text-navy-800">{total}</strong> hasil untuk "
-                    <em className="text-navy-700 font-medium not-italic">{q}</em>"
+                    <strong className="text-navy-800">{total}</strong> hasil untuk &quot;
+                    <em className="text-navy-700 font-medium not-italic">{q}</em>&quot;
                   </>
                 ) : kategori ? (
                   <>
-                    <strong className="text-navy-800">{total}</strong> dokumen dalam "
-                    <em className="text-navy-700 font-medium not-italic">{kategori}</em>"
+                    <strong className="text-navy-800">{total}</strong> dokumen dalam &quot;
+                    <em className="text-navy-700 font-medium not-italic">{kategori}</em>&quot;
                   </>
                 ) : (
                   <>

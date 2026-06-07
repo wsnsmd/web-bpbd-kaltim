@@ -1,7 +1,7 @@
 // src/app/admin/(dashboard)/homepage/services/_components/service-dialog.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -83,7 +83,7 @@ export function ServiceDialog({ open, onOpenChange, item, onSuccess }: Props) {
         isActive: item?.isActive ?? true,
       })
     }
-  }, [open, item])
+  }, [open, item, form])
 
   const { isSubmitting } = form.formState
   const watchedIcon = form.watch('icon')

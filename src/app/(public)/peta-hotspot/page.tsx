@@ -1,6 +1,6 @@
 // src/app/(public)/peta-hotspot/page.tsx
 import Link from 'next/link'
-import { ChevronRight, Flame } from 'lucide-react'
+import { Flame } from 'lucide-react'
 import { PetaHotspotClient } from './_components/peta-hotspot-client'
 import { db } from '@/lib/db'
 import { siteSettings } from '@db/schema'

@@ -23,7 +23,6 @@ import {
   Quote,
   Undo,
   Redo,
-  Link as LinkIcon,
   ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'

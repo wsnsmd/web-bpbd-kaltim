@@ -3,9 +3,6 @@ import Header from '@components/layout/header'
 import Footer from '@components/layout/footer'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { EmergencyTicker } from '@components/shared/emergency-ticker'
-import { Phone } from 'lucide-react'
-import Link from 'next/link'
-import { cn } from '@/lib/utils'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (

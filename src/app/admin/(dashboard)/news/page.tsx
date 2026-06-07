@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { news, newsCategories, users } from '@db/schema'
 import { desc, eq, like, and, SQL } from 'drizzle-orm'
-import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
+import { Plus, Pencil, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
   Table,
   TableBody,

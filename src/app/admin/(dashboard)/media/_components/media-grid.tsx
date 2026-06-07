@@ -1,7 +1,4 @@
 // src/app/admin/(dashboard)/media/_components/media-grid.tsx
-// Patch: tambah support dokumen (PDF, DOCX, dll)
-// Ganti baris accept="image/*" dan tambah fungsi isImage + DocIcon
-
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
@@ -102,36 +99,42 @@ export function MediaGrid({ initialItems, onSelect, mode = 'library' }: Props) {
     setItems(initialItems)
   }, [initialItems])
 
-  async function uploadFiles(files: FileList | File[]) {
-    const fileArr = Array.from(files)
-    if (!fileArr.length) return
+  const uploadFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const fileArr = Array.from(files)
+      if (!fileArr.length) return
 
-    setUploading(true)
-    let successCount = 0
+      setUploading(true)
+      let successCount = 0
 
-    for (const file of fileArr) {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      const json = await res.json()
-      if (json.success) {
-        setItems((prev) => [json.media, ...prev])
-        successCount++
-      } else toast.error(`${file.name}: ${json.error}`)
-    }
+      for (const file of fileArr) {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        const json = await res.json()
+        if (json.success) {
+          setItems((prev) => [json.media, ...prev])
+          successCount++
+        } else toast.error(`${file.name}: ${json.error}`)
+      }
 
-    if (successCount > 0) {
-      toast.success(`${successCount} file berhasil diupload`)
-      router.refresh()
-    }
-    setUploading(false)
-  }
+      if (successCount > 0) {
+        toast.success(`${successCount} file berhasil diupload`)
+        router.refresh()
+      }
+      setUploading(false)
+    },
+    [router]
+  )
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    uploadFiles(e.dataTransfer.files)
-  }, [])
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+      uploadFiles(e.dataTransfer.files)
+    },
+    [uploadFiles]
+  )
 
   async function copyUrl(item: MediaItem) {
     await navigator.clipboard.writeText(item.url)
@@ -181,7 +184,6 @@ export function MediaGrid({ initialItems, onSelect, mode = 'library' }: Props) {
         <input
           ref={inputRef}
           type="file"
-          // Terima gambar DAN dokumen
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
           multiple
           className="hidden"

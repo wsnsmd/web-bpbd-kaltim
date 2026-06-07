@@ -59,7 +59,7 @@ export function FaqDialog({ open, onOpenChange, item, onSuccess }: Props) {
         isActive: item?.isActive ?? true,
       })
     }
-  }, [open, item])
+  }, [open, item, form]) // Perbaikan: form ditambahkan ke dependency array
 
   const { isSubmitting } = form.formState
 

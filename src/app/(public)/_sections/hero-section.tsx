@@ -2,7 +2,7 @@
 import { unstable_noStore as noStore } from 'next/cache'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Shield, LayoutList, MapPin, AlertTriangle, ChevronRight } from 'lucide-react'
+import { LayoutList, MapPin, AlertTriangle } from 'lucide-react'
 import { db } from '@/lib/db'
 import { siteSettings } from '@db/schema'
 
@@ -34,36 +34,6 @@ export async function HeroSection() {
   const titleLines = s.title.split('\n')
   const titleLine1 = titleLines[0] ?? ''
   const titleLine2 = titleLines[1] ?? ''
-
-  const STATUS_HERO_CONFIG = {
-    aman: {
-      label: 'Status Siaga',
-      dot: 'text-green-400',
-      ring: 'border-green-400/40 bg-green-400/10',
-      icon: 'text-green-400',
-    },
-    waspada: {
-      label: 'Waspada',
-      dot: 'text-yellow-400',
-      ring: 'border-yellow-400/40 bg-yellow-400/10',
-      icon: 'text-yellow-400',
-    },
-    siaga: {
-      label: 'Siaga',
-      dot: 'text-orange-400',
-      ring: 'border-orange-400/40 bg-orange-400/10',
-      icon: 'text-orange-400',
-    },
-    tanggap: {
-      label: 'Tanggap Darurat',
-      dot: 'text-red-400',
-      ring: 'border-red-400/40 bg-red-400/10',
-      icon: 'text-red-400',
-    },
-  }
-  const stCfg =
-    STATUS_HERO_CONFIG[s.statusWilayah as keyof typeof STATUS_HERO_CONFIG] ??
-    STATUS_HERO_CONFIG.aman
 
   return (
     <section className="bg-navy-500 relative flex min-h-[95vh] flex-col justify-center overflow-hidden">

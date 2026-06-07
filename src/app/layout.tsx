@@ -1,13 +1,10 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
-import { DM_Sans, DM_Serif_Display, Noto_Sans, Playfair_Display } from 'next/font/google'
+import { DM_Sans, DM_Serif_Display } from 'next/font/google'
+import { AnalyticsProvider } from '@/components/analytics-provider'
 import { Providers } from '@components/providers'
 import './globals.css'
 import { cn } from '@/lib/utils'
-
-const playfairDisplayHeading = Playfair_Display({ subsets: ['latin'], variable: '--font-heading' })
-
-const notoSans = Noto_Sans({ subsets: ['latin'], variable: '--font-sans' })
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -25,7 +22,7 @@ const dmSerif = DM_Serif_Display({
 export const metadata: Metadata = {
   title: {
     default: 'BPBD Provinsi Kalimantan Timur',
-    template: '%s | BPBD Kaltim',
+    template: '%s | BPBD Provinsi Kalimantan Timur',
   },
   description:
     'Portal resmi Badan Penanggulangan Bencana Daerah Provinsi Kalimantan Timur. Pusat koordinasi, informasi, dan layanan kebencanaan wilayah Benua Etam.',
@@ -46,7 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className={`${dmSans.variable} ${dmSerif.variable} antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <AnalyticsProvider />
+        </Providers>
       </body>
     </html>
   )

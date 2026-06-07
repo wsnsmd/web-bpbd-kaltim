@@ -30,22 +30,6 @@ interface SummaryStats {
   totalKK: number
   totalKerugian: number
 }
-interface IncidentRow {
-  id: number
-  status: string
-  occurredYear: number
-  occurredMonth: number
-  regencyName: string
-  jenisName: string
-  jenisCategory: string
-  jenisColor: string
-  mengungsi: number
-  menderita: number
-  hilang: number
-  meninggal: number
-  lukaSakit: number
-  kerugian: number
-}
 interface JenisItem {
   name: string
   category: string
@@ -56,7 +40,6 @@ interface Props {
   summaryStats: SummaryStats
   perKabkota: { name: string; total: number }[]
   perJenis: JenisItem[]
-  perBulan: { bulan: number; total: number }[]
   perBulanAll: { tahun: number; bulan: number; total: number }[]
   perTahun: { tahun: number; total: number }[]
   alamCount: number
@@ -76,12 +59,27 @@ function fmtRp(n: number) {
   return `Rp ${fmtNum(n)}`
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+interface TooltipPayloadItem {
+  name: string
+  value: number
+  color?: string
+  fill?: string
+}
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: TooltipPayloadItem[]
+  label?: string
+}) {
   if (!active || !payload?.length) return null
   return (
     <div className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs shadow-lg">
       <p className="mb-1 font-bold text-slate-700">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <p key={i} style={{ color: p.color ?? p.fill }}>
           {p.name}: <strong>{fmtNum(p.value)}</strong>
         </p>
@@ -94,7 +92,6 @@ export function StatistikClient({
   summaryStats,
   perKabkota,
   perJenis,
-  perBulan,
   perBulanAll,
   perTahun,
   alamCount,
@@ -137,13 +134,11 @@ export function StatistikClient({
     { name: 'Non Alam', value: nonAlamCount, color: '#f97316' },
   ]
 
-  const isMultiYear = selectedYears.length > 1
-
   return (
     <div className="min-h-screen bg-slate-50">
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="bg-navy-900 px-4 py-8">
-        <div className="max-w-content-lg mx-auto px-4 md:px-8">
+        <div className="mx-auto max-w-screen-2xl px-4 md:px-8">
           <div className="text-navy-400 mb-3 flex items-center gap-2 text-xs">
             <Link href="/" className="transition hover:text-white">
               Beranda
@@ -188,11 +183,11 @@ export function StatistikClient({
         </div>
       </div>
 
-      <div className="max-w-content-lg mx-auto space-y-6 px-4 py-8 md:px-8">
+      <div className="mx-auto max-w-screen-2xl space-y-6 px-4 py-8 md:px-8">
         {/* ── Summary ─────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
           {/* Total kejadian — card besar */}
-          <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl bg-orange-500 p-8 text-center text-white shadow-md">
+          <div className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl bg-orange-500 p-8 text-center text-white shadow-md">
             <p className="mb-2 text-sm font-bold tracking-widest uppercase opacity-90">
               Total Kejadian
             </p>
@@ -317,11 +312,12 @@ export function StatistikClient({
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value) => {
-                        const numValue = Number(value) || 0
-                        const percentage =
-                          totalForPie > 0 ? ((numValue / totalForPie) * 100).toFixed(1) : 0
-                        return `${fmtNum(numValue)} (${percentage}%)`
+                      formatter={(v) => {
+                        const n = Number(v)
+                        return [
+                          `${fmtNum(n)} (${totalForPie > 0 ? ((n / totalForPie) * 100).toFixed(1) : 0}%)`,
+                          '',
+                        ]
                       }}
                     />
                   </PieChart>
@@ -396,10 +392,7 @@ export function StatistikClient({
                   dataKey="total"
                   position="top"
                   style={{ fontSize: 11, fontWeight: 700, fill: '#e85000' }}
-                  formatter={(value) => {
-                    const num = Number(value) || 0
-                    return num > 0 ? num.toString() : ''
-                  }}
+                  formatter={(v) => (Number(v) > 0 ? v : '')}
                 />
               </Bar>
             </BarChart>

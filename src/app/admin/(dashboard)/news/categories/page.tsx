@@ -1,9 +1,8 @@
 // src/app/admin/(dashboard)/news/categories/page.tsx
 import { db } from '@/lib/db'
 import { newsCategories, news } from '@db/schema'
-import { desc, count, eq } from 'drizzle-orm'
-import { Plus } from 'lucide-react'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { count, eq } from 'drizzle-orm'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
   TableBody,

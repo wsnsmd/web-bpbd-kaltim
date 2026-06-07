@@ -1,19 +1,11 @@
 // src/app/(public)/peta-hotspot/_components/peta-hotspot-client.tsx
+
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import {
-  Flame,
-  RefreshCw,
-  MapPin,
-  Filter,
-  AlertTriangle,
-  List,
-  Map as MapIcon,
-  X,
-} from 'lucide-react'
+import { Flame, RefreshCw, MapPin, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface HotspotPoint {
@@ -51,7 +43,6 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
   const mapRef = useRef<mapboxgl.Map | null>(null)
 
   const [points, setPoints] = useState<HotspotPoint[]>([])
-  const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
@@ -60,7 +51,9 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
   const [filterConf, setFilterConf] = useState('all')
   const [selected, setSelected] = useState<HotspotPoint | null>(null)
 
-  // Fetch data dari API route
+  // PERBAIKAN 1: Tambahkan state penanda map sudah load
+  const [isMapLoaded, setIsMapLoaded] = useState(false)
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -71,13 +64,12 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
         setError(data.error)
       } else {
         setPoints(data.points ?? [])
-        setStats(data.stats ?? null)
         setLastUpdate(
           new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
         )
       }
-    } catch (e: any) {
-      setError(e.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan')
     } finally {
       setLoading(false)
     }
@@ -103,33 +95,42 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
     mapboxgl.accessToken = mapToken
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/satellite-streets-v12', // satellite untuk hotspot
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
       center: [centerLng, centerLat],
       zoom: 6.5,
+      projection: 'mercator',
     })
     mapRef.current = map
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
 
-    return () => {
-      map.remove()
-      mapRef.current = null
-    }
-  }, [mapToken])
+    // PERBAIKAN 2: Beritahu state jika style map sudah selesai diload
+    map.on('load', () => {
+      setIsMapLoaded(true)
+    })
 
-  // Update markers saat data/filter berubah
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
+      setIsMapLoaded(false)
+    }
+  }, [mapToken, centerLat, centerLng])
+
+  // Update markers saat data/filter berubah ATAU map selesai diload
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !map.isStyleLoaded()) return
+
+    // PERBAIKAN 3: Gunakan state isMapLoaded sebagai ganti isStyleLoaded()
+    if (!map || !isMapLoaded || filtered.length === 0) return
 
     const sourceId = 'hotspot-src'
 
-    // Remove existing
+    // Remove existing layers and source
     if (map.getLayer('hotspot-heat')) map.removeLayer('hotspot-heat')
     if (map.getLayer('hotspot-circle')) map.removeLayer('hotspot-circle')
     if (map.getLayer('hotspot-label')) map.removeLayer('hotspot-label')
     if (map.getSource(sourceId)) map.removeSource(sourceId)
-
-    if (filtered.length === 0) return
 
     const geojson: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
@@ -208,8 +209,8 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
       },
     })
 
-    // Klik marker
-    map.on('click', 'hotspot-circle', (e) => {
+    // Event handler untuk klik marker
+    const handleCircleClick = (e: mapboxgl.MapLayerMouseEvent) => {
       const props = e.features?.[0]?.properties
       if (!props) return
       const idx = props.idx
@@ -218,14 +219,32 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
         setSelected(point)
         setMobileTab('map')
       }
-    })
-    map.on('mouseenter', 'hotspot-circle', () => {
+    }
+
+    const handleMouseEnter = () => {
       map.getCanvas().style.cursor = 'pointer'
-    })
-    map.on('mouseleave', 'hotspot-circle', () => {
+    }
+
+    const handleMouseLeave = () => {
       map.getCanvas().style.cursor = ''
-    })
-  }, [filtered, mapToken])
+    }
+
+    map.on('click', 'hotspot-circle', handleCircleClick)
+    map.on('mouseenter', 'hotspot-circle', handleMouseEnter)
+    map.on('mouseleave', 'hotspot-circle', handleMouseLeave)
+
+    return () => {
+      try {
+        if (map && map.getLayer('hotspot-circle')) {
+          map.off('click', 'hotspot-circle', handleCircleClick)
+          map.off('mouseenter', 'hotspot-circle', handleMouseEnter)
+          map.off('mouseleave', 'hotspot-circle', handleMouseLeave)
+        }
+      } catch {
+        // Map sudah di-remove saat navigasi, abaikan
+      }
+    }
+  }, [filtered, isMapLoaded]) // PERBAIKAN 4: Tambahkan isMapLoaded ke dependency array
 
   const totalHigh = filtered.filter((p) => p.confidence.toLowerCase() === 'high').length
   const totalMedium = filtered.filter((p) => p.confidence.toLowerCase() === 'medium').length
@@ -233,14 +252,14 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      {/* ── Sidebar kiri ── */}
+      {/* Sidebar kiri */}
       <div
         className={cn(
           'flex w-80 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white',
           mobileTab === 'list' ? 'flex' : 'hidden md:flex'
         )}
       >
-        {/* Stats */}
+        {/* Stats & Refresh */}
         <div className="shrink-0 space-y-2 border-b bg-slate-50 px-4 py-3">
           {loading ? (
             <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -313,7 +332,7 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
           </div>
         </div>
 
-        {/* List */}
+        {/* List Hotspot */}
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
@@ -369,7 +388,7 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
         </div>
       </div>
 
-      {/* ── Peta ── */}
+      {/* Map Container */}
       <div
         className={cn(
           'relative flex-1 overflow-hidden',
@@ -399,21 +418,16 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
                 mobileTab === t ? 'bg-white/20 text-white' : 'text-white/60'
               )}
             >
-              {t === 'map' ? (
-                <>
-                  <MapIcon className="h-3 w-3" /> Peta
-                </>
-              ) : (
-                <>
-                  <List className="h-3 w-3" /> List
-                </>
-              )}
+              {t === 'map' ? '🗺️ Peta' : '📋 List'}
             </button>
           ))}
         </div>
 
         {/* Legend */}
-        <div className="absolute right-3 bottom-8 z-10 space-y-2 rounded-xl bg-black/70 p-3 text-xs backdrop-blur-sm">
+        <div
+          className="absolute right-4 bottom-4 z-10 space-y-2 rounded-lg border border-orange-400 bg-black/70 p-3 text-xs backdrop-blur-sm"
+          style={{ top: '8px', right: '50px' }}
+        >
           <p className="mb-2 text-[10px] font-bold tracking-wider text-white/70 uppercase">
             Tingkat Kepercayaan
           </p>
@@ -446,7 +460,7 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
                 onClick={() => setSelected(null)}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
               >
-                <X className="h-3 w-3" />
+                ✕
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">

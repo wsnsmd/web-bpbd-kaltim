@@ -98,7 +98,7 @@ export function MenuItemDialog({
         parentId: item?.parentId ?? parentId ?? null,
       })
     }
-  }, [open, item, parentId])
+  }, [open, item, parentId, form])
 
   const { isSubmitting } = form.formState
   const watchedParentId = form.watch('parentId')

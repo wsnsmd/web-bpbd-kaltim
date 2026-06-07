@@ -1,7 +1,6 @@
 // src/app/(public)/_sections/emergency-contacts-section.tsx
 import { Phone, Headset, MessageSquare } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 
 export function EmergencyContactsSection() {
   return (

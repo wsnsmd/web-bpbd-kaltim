@@ -1,4 +1,3 @@
-// src/app/admin/(dashboard)/incidents/_components/incidents-panel.tsx
 'use client'
 
 import { useState, useMemo } from 'react'
@@ -20,7 +19,6 @@ import {
   ChevronsRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -43,7 +41,10 @@ interface IncidentItem {
   disasterTypeName: string | null
   disasterTypeIcon: string | null
   disasterTypeColor: string | null
+  causeId: number | null
+  causeDetail: string | null
   source: string | null
+  description: string | null
   occurredDate: string | null
   occurredTime: string | null
   regencyId: string | null
@@ -51,14 +52,32 @@ interface IncidentItem {
   districtId: string | null
   villageName: string | null
   addressDetail: string | null
-  description: string | null
-  currentEffort: string | null
   latitude: string | null
   longitude: string | null
-  status: string
+  status: string // ← Ubah dari string | null menjadi string (dengan default value)
   currentCondition: string | null
+  currentEffort: string | null
   isPublished: boolean | null
   createdAt: Date | null
+  updatedAt: Date | null
+  victims?: Array<{
+    id: number
+    incidentId: number
+    impactType: string
+    ageGroup: string
+    countMale: number
+    countFemale: number
+    countTotal: number | null
+  }>
+  damages?: Array<{
+    id: number
+    incidentId: number
+    assetName: string
+    heavyDamage: number
+    moderateDamage: number
+    lightDamage: number
+    estimatedLoss: number
+  }>
 }
 
 interface DisasterType {
@@ -93,7 +112,12 @@ const STATUS_CONFIG = {
     text: 'text-amber-700',
     dot: 'bg-amber-500',
   },
-  selesai: { label: 'Selesai', bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+  selesai: {
+    label: 'Selesai',
+    bg: 'bg-green-100',
+    text: 'text-green-700',
+    dot: 'bg-green-500',
+  },
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
@@ -105,6 +129,36 @@ function formatDate(date: string | null) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(date))
+}
+
+// Komponen dipindahkan ke luar render
+function PageBtn({
+  p,
+  label,
+  disabled,
+  isActive,
+  onClick,
+}: {
+  p: number
+  label?: React.ReactNode
+  disabled?: boolean
+  isActive: boolean
+  onClick: (page: number) => void
+}) {
+  return (
+    <button
+      onClick={() => onClick(p)}
+      disabled={disabled || isActive}
+      className={cn(
+        'inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition',
+        isActive
+          ? 'bg-navy-800 text-white'
+          : 'text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40'
+      )}
+    >
+      {label ?? p}
+    </button>
+  )
 }
 
 export function IncidentsPanel({ initialItems, disasterTypes, kabkotas, causes }: Props) {
@@ -196,32 +250,6 @@ export function IncidentsPanel({ initialItems, disasterTypes, kabkotas, causes }
   }
 
   // Pagination helpers
-  function PageBtn({
-    p,
-    label,
-    disabled,
-  }: {
-    p: number
-    label?: React.ReactNode
-    disabled?: boolean
-  }) {
-    const isActive = p === safePage
-    return (
-      <button
-        onClick={() => setPage(p)}
-        disabled={disabled || isActive}
-        className={cn(
-          'inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition',
-          isActive
-            ? 'bg-navy-800 text-white'
-            : 'text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40'
-        )}
-      >
-        {label ?? p}
-      </button>
-    )
-  }
-
   function paginationPages() {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
     if (safePage <= 4) return [1, 2, 3, 4, 5, '...', totalPages]
@@ -564,11 +592,15 @@ export function IncidentsPanel({ initialItems, disasterTypes, kabkotas, causes }
               p={1}
               label={<ChevronsLeft className="h-3.5 w-3.5" />}
               disabled={safePage === 1}
+              isActive={safePage === 1}
+              onClick={setPage}
             />
             <PageBtn
               p={safePage - 1}
               label={<ChevronLeft className="h-3.5 w-3.5" />}
               disabled={safePage === 1}
+              isActive={safePage - 1 === safePage}
+              onClick={setPage}
             />
 
             {paginationPages().map((p, i) =>
@@ -577,7 +609,7 @@ export function IncidentsPanel({ initialItems, disasterTypes, kabkotas, causes }
                   …
                 </span>
               ) : (
-                <PageBtn key={p} p={p as number} />
+                <PageBtn key={p} p={p as number} isActive={p === safePage} onClick={setPage} />
               )
             )}
 
@@ -585,11 +617,15 @@ export function IncidentsPanel({ initialItems, disasterTypes, kabkotas, causes }
               p={safePage + 1}
               label={<ChevronRight className="h-3.5 w-3.5" />}
               disabled={safePage === totalPages}
+              isActive={safePage + 1 === safePage}
+              onClick={setPage}
             />
             <PageBtn
               p={totalPages}
               label={<ChevronsRight className="h-3.5 w-3.5" />}
               disabled={safePage === totalPages}
+              isActive={safePage === totalPages}
+              onClick={setPage}
             />
           </div>
         </div>
@@ -617,6 +653,8 @@ export function IncidentsPanel({ initialItems, disasterTypes, kabkotas, causes }
             occurredDate: editItem.occurredDate
               ? new Date(editItem.occurredDate).toISOString().slice(0, 10)
               : '',
+            victims: editItem.victims || [],
+            damages: editItem.damages || [],
           }}
           disasterTypes={disasterTypes}
           kabkotas={kabkotas}

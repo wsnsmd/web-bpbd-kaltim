@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ArrowRight, Calendar } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import { db } from '@/lib/db'
-import { news, newsCategories } from '@db/schema'
+import { news } from '@db/schema'
 import { eq, desc, and } from 'drizzle-orm'
 import { cache } from 'react'
 import { formatDistanceToNow } from 'date-fns'
@@ -81,6 +81,7 @@ export async function EdukasiSection() {
               <div className="space-y-3">
                 {edukasiItems.map((item, idx) => {
                   const iconName = EDUKASI_ICONS[idx % EDUKASI_ICONS.length]
+                   
                   const Icon = (LucideIcons as any)[iconName] ?? LucideIcons.BookOpen
                   return (
                     <Link

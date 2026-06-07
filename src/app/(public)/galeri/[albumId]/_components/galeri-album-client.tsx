@@ -25,10 +25,97 @@ interface Props {
   videos: GalleryItem[]
 }
 
+interface GridProps {
+  items: GalleryItem[]
+  onPhotoClick?: (item: GalleryItem) => void
+  onVideoClick?: (item: GalleryItem) => void
+}
+
 function toEmbedUrl(url: string | null) {
   if (!url) return null
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
   return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : url
+}
+
+// PhotoGrid component - moved outside
+function PhotoGrid({ items, onPhotoClick }: GridProps) {
+  if (items.length === 0) {
+    return <p className="text-muted-foreground py-12 text-center text-sm">Belum ada foto.</p>
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      {items.map((item) => (
+        <div
+          key={item.id}
+          onClick={() => onPhotoClick?.(item)}
+          className="group relative aspect-square cursor-pointer overflow-hidden rounded-xl bg-slate-100"
+        >
+          {item.displayThumb ? (
+            <Image
+              src={item.displayThumb}
+              alt={item.title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <Camera className="h-8 w-8 text-slate-300" />
+            </div>
+          )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+            <Expand className="h-6 w-6 text-white" />
+          </div>
+          {item.caption && (
+            <div className="absolute right-0 bottom-0 left-0 translate-y-full bg-linear-to-t from-black/80 to-transparent p-3 text-[10px] text-white transition-transform group-hover:translate-y-0">
+              {item.caption}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// VideoGrid component - moved outside
+function VideoGrid({ items, onVideoClick }: GridProps) {
+  if (items.length === 0) {
+    return <p className="text-muted-foreground py-12 text-center text-sm">Belum ada video.</p>
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+      {items.map((item) => (
+        <div
+          key={item.id}
+          onClick={() => onVideoClick?.(item)}
+          className="group relative aspect-video cursor-pointer overflow-hidden rounded-xl bg-slate-100"
+        >
+          {item.displayThumb ? (
+            <Image
+              src={item.displayThumb}
+              alt={item.title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="bg-navy-50 flex h-full items-center justify-center">
+              <Film className="text-navy-200 h-10 w-10" />
+            </div>
+          )}
+          {/* Overlay play */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30 transition-colors group-hover:bg-black/50">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 transition-all group-hover:bg-orange-500 group-hover:ring-orange-400">
+              <Play className="ml-1 h-6 w-6 text-white" />
+            </div>
+            <p className="line-clamp-2 px-4 text-center text-xs font-semibold text-white drop-shadow">
+              {item.title}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export function GaleriAlbumClient({ albumType, photos, videos }: Props) {
@@ -57,93 +144,21 @@ export function GaleriAlbumClient({ albumType, photos, videos }: Props) {
   // Keyboard navigation
   useEffect(() => {
     if (!lightboxPhoto) return
-    function onKey(e: KeyboardEvent) {
+
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') goPrev()
       if (e.key === 'ArrowRight') goNext()
       if (e.key === 'Escape') setLightboxPhoto(null)
     }
+
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [lightboxPhoto, lightboxIndex])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxPhoto])
 
   const hasPhotos = photos.length > 0
-  const hasVideos = videos.length > 0
+
   const isMixed = albumType === 'mixed'
-
-  // Konten foto grid
-  const PhotoGrid = ({ items }: { items: GalleryItem[] }) =>
-    items.length === 0 ? (
-      <p className="text-muted-foreground py-12 text-center text-sm">Belum ada foto.</p>
-    ) : (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => openPhoto(item)}
-            className="group relative aspect-square cursor-pointer overflow-hidden rounded-xl bg-slate-100"
-          >
-            {item.displayThumb ? (
-              <Image
-                src={item.displayThumb}
-                alt={item.title}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <Camera className="h-8 w-8 text-slate-300" />
-              </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <Expand className="h-6 w-6 text-white" />
-            </div>
-            {item.caption && (
-              <div className="absolute right-0 bottom-0 left-0 translate-y-full bg-linear-to-t from-black/80 to-transparent p-3 text-[10px] text-white transition-transform group-hover:translate-y-0">
-                {item.caption}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    )
-
-  // Konten video grid
-  const VideoGrid = ({ items }: { items: GalleryItem[] }) =>
-    items.length === 0 ? (
-      <p className="text-muted-foreground py-12 text-center text-sm">Belum ada video.</p>
-    ) : (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => setLightboxVideo(item)}
-            className="group relative aspect-video cursor-pointer overflow-hidden rounded-xl bg-slate-100"
-          >
-            {item.displayThumb ? (
-              <Image
-                src={item.displayThumb}
-                alt={item.title}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <div className="bg-navy-50 flex h-full items-center justify-center">
-                <Film className="text-navy-200 h-10 w-10" />
-              </div>
-            )}
-            {/* Overlay play */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30 transition-colors group-hover:bg-black/50">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 transition-all group-hover:bg-orange-500 group-hover:ring-orange-400">
-                <Play className="ml-1 h-6 w-6 text-white" />
-              </div>
-              <p className="line-clamp-2 px-4 text-center text-xs font-semibold text-white drop-shadow">
-                {item.title}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    )
 
   return (
     <>
@@ -165,16 +180,16 @@ export function GaleriAlbumClient({ albumType, photos, videos }: Props) {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="foto">
-            <PhotoGrid items={photos} />
+            <PhotoGrid items={photos} onPhotoClick={openPhoto} />
           </TabsContent>
           <TabsContent value="video">
-            <VideoGrid items={videos} />
+            <VideoGrid items={videos} onVideoClick={setLightboxVideo} />
           </TabsContent>
         </Tabs>
       ) : albumType === 'video' ? (
-        <VideoGrid items={videos} />
+        <VideoGrid items={videos} onVideoClick={setLightboxVideo} />
       ) : (
-        <PhotoGrid items={photos} />
+        <PhotoGrid items={photos} onPhotoClick={openPhoto} />
       )}
 
       {/* Lightbox Foto */}

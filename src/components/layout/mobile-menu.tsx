@@ -5,7 +5,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, ChevronDown, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
 interface MenuItem {

@@ -21,6 +21,7 @@ const getDownloads = cache(async () => {
 })
 
 function DynamicIcon({ name, className }: { name: string | null; className?: string }) {
+   
   const Icon = (LucideIcons as any)[name ?? 'FileText'] ?? LucideIcons.FileText
   return <Icon className={className} />
 }

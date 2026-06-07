@@ -1,7 +1,6 @@
 // src/app/admin/(dashboard)/master-data/page.tsx
 import { db } from '@/lib/db'
 import { disasterTypes, disasterCauses } from '@db/schema'
-import { eq } from 'drizzle-orm'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DisasterTypesPanel } from './_components/disaster-types-panel'
 import { DisasterCausesPanel } from './_components/disaster-causes-panel'

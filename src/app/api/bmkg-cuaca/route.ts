@@ -25,6 +25,6 @@ export async function GET(request: NextRequest) {
       headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' },
     })
   } catch (e) {
-    return NextResponse.json({ error: 'Failed to fetch BMKG' }, { status: 500 })
+    return NextResponse.json({ error: `Failed to fetch BMKG ${e}` }, { status: 500 })
   }
 }

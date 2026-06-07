@@ -5,7 +5,6 @@ import { db } from '@/lib/db'
 import { siteSettings } from '@db/schema'
 import { ChevronRight, MapPin, Phone, Mail, Clock, MessageCircle, ExternalLink } from 'lucide-react'
 import { SiFacebook, SiInstagram, SiYoutube, SiX } from 'react-icons/si'
-import { Card, CardContent } from '@/components/ui/card'
 import { ContactMap } from './_components/contact-map'
 
 export const metadata = {
@@ -26,51 +25,6 @@ export default async function KontakPage() {
   const mapZoom = parseFloat(s.map_zoom ?? '15')
   const siteName = s.site_name ?? 'BPBD Provinsi Kalimantan Timur'
   const address = s.contact_address ?? 'Jl. Tengkawang No. 1, Samarinda, Kalimantan Timur'
-
-  const contacts = [
-    {
-      icon: MapPin,
-      label: 'Alamat Kantor',
-      value: address,
-      href: `https://maps.google.com/?q=${encodeURIComponent(address)}`,
-      color: 'bg-orange-50 text-orange-600',
-    },
-    {
-      icon: Phone,
-      label: 'Telepon',
-      value: s.contact_phone || '(0541) XXX-XXXX',
-      href: `tel:${s.contact_phone}`,
-      color: 'bg-blue-50 text-blue-600',
-    },
-    {
-      icon: Phone,
-      label: 'Call Center Darurat',
-      value: `${s.contact_emergency || '112'} (Gratis · 24 Jam)`,
-      href: `tel:${s.contact_emergency || '112'}`,
-      color: 'bg-red-50 text-red-600',
-      highlight: true,
-    },
-    {
-      icon: Mail,
-      label: 'Email',
-      value: s.contact_email || 'pusdalops@bpbd.kaltimprov.go.id',
-      href: `mailto:${s.contact_email}`,
-      color: 'bg-emerald-50 text-emerald-600',
-    },
-    {
-      icon: MessageCircle,
-      label: 'WhatsApp Pusdalops',
-      value: `+${s.contact_whatsapp || '62812XXXXXXXX'}`,
-      href: `https://wa.me/${s.contact_whatsapp}`,
-      color: 'bg-green-50 text-green-600',
-    },
-    {
-      icon: Clock,
-      label: 'Jam Operasional',
-      value: s.office_hours || 'Senin – Jumat, 08.00 – 16.30 WITA',
-      color: 'bg-slate-50 text-slate-600',
-    },
-  ]
 
   const socials = [
     {
@@ -93,170 +47,200 @@ export default async function KontakPage() {
     },
     {
       icon: SiX,
-      label: 'X',
+      label: 'X / Twitter',
       href: s.social_twitter,
       color: 'hover:bg-black hover:text-white hover:border-black',
     },
-  ].filter((s) => s.href)
+  ].filter((item) => item.href)
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-navy-900 relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
+      {/* ── Peta Full Width ── */}
+      <div className="relative w-full" style={{ height: '65vh', minHeight: '500px' }}>
+        <ContactMap
+          token={mapToken}
+          latitude={mapLat}
+          longitude={mapLng}
+          zoom={mapZoom}
+          popupName={siteName}
+          popupAddress={address}
+          className="h-full w-full"
         />
-        <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
-        <div className="container-content max-w-content relative z-10 mx-auto py-12">
-          <div className="text-navy-400 mb-4 flex items-center gap-2 text-xs">
-            <Link href="/" className="transition hover:text-white">
+
+        {/* Breadcrumb di atas peta */}
+        <div className="absolute top-4 left-4 z-10">
+          <div className="flex items-center gap-2 rounded-full border border-white/20 bg-black/50 px-4 py-1.5 text-xs text-white backdrop-blur-sm">
+            <Link href="/" className="transition hover:text-orange-300">
               Beranda
             </Link>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-white">Kontak</span>
+            <ChevronRight className="h-3 w-3 opacity-60" />
+            <span>Kontak</span>
           </div>
-          <p className="mb-2 text-[11px] font-bold tracking-widest text-orange-400 uppercase">
-            Hubungi Kami
-          </p>
-          <h1 className="mb-2 text-3xl leading-none font-black tracking-tight text-white md:text-4xl">
-            Kontak & Lokasi
-          </h1>
-          <p className="text-navy-300 max-w-lg text-sm">
-            Kami siap melayani 24 jam untuk kedaruratan. Untuk pertanyaan umum, hubungi pada jam
-            operasional.
-          </p>
+        </div>
+
+        {/* Badge lokasi di atas peta */}
+        <div className="absolute bottom-10 left-1/2 z-10 -translate-x-1/2">
+          <div className="flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-xs font-semibold text-white shadow-xl backdrop-blur-md">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-orange-400" />
+            <span className="max-w-xs truncate">{address}</span>
+          </div>
         </div>
       </div>
 
-      <div className="container-content max-w-content mx-auto py-10">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
-          {/* ── Kiri: Peta ── */}
-          <div className="space-y-6">
-            <Card className="gap-0 overflow-hidden rounded-lg p-0">
-              <div className="bg-navy-800 flex items-center gap-2 px-5 py-3.5">
-                <MapPin className="h-4 w-4 text-orange-400" />
-                <p className="text-sm font-semibold text-white">Lokasi Kantor</p>
-              </div>
-              <ContactMap
-                token={mapToken}
-                latitude={mapLat}
-                longitude={mapLng}
-                zoom={mapZoom}
-                popupName={siteName}
-                popupAddress={address}
-              />
-            </Card>
+      {/* ── Konten bawah peta ── */}
+      <div className="container-content mx-auto max-w-(--width-content) px-4 py-12">
+        {/* Judul */}
+        <div className="mb-10 text-center">
+          <p className="mb-1 text-[11px] font-bold tracking-widest text-orange-500 uppercase">
+            Hubungi Kami
+          </p>
+          <h1 className="text-navy-800 text-3xl font-black tracking-tight md:text-4xl">
+            Kontak & Informasi Kantor
+          </h1>
+          <p className="text-muted-foreground mx-auto mt-3 max-w-lg text-sm">
+            Kami siap melayani 24 jam untuk kedaruratan. Untuk pertanyaan umum hubungi pada jam
+            operasional.
+          </p>
+        </div>
 
-            {/* Info tambahan */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {[
-                {
-                  label: 'Telepon Kantor',
-                  value: s.contact_phone || '(0541) XXX-XXXX',
-                  href: `tel:${s.contact_phone}`,
-                  icon: Phone,
-                  color: 'text-blue-600 bg-blue-50',
-                },
-                {
-                  label: 'Email',
-                  value: s.contact_email || 'pusdalops@bpbd.kaltimprov.go.id',
-                  href: `mailto:${s.contact_email}`,
-                  icon: Mail,
-                  color: 'text-emerald-600 bg-emerald-50',
-                },
-                {
-                  label: 'WhatsApp',
-                  value: `+${s.contact_whatsapp || '62812XXXXXXXX'}`,
-                  href: `https://wa.me/${s.contact_whatsapp}`,
-                  icon: MessageCircle,
-                  color: 'text-green-600 bg-green-50',
-                },
-              ].map((item) => (
+        {/* ── Darurat CTA ── */}
+        <div className="mb-10 overflow-hidden rounded-2xl bg-red-600 shadow-lg shadow-red-200">
+          <div className="flex flex-col items-center justify-between gap-4 px-8 py-6 sm:flex-row">
+            <div className="text-center sm:text-left">
+              <p className="text-xs font-bold tracking-widest text-red-200 uppercase">
+                Kedaruratan
+              </p>
+              <p className="mt-1 text-2xl font-black text-white">Butuh Bantuan Darurat?</p>
+              <p className="mt-1 text-sm text-red-200">
+                Hubungi Pusdalops kami 24 jam, 7 hari seminggu
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <a
+                href="tel:112"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-black text-red-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <Phone className="h-5 w-5" />
+                112 — Darurat
+              </a>
+              {s.contact_whatsapp && (
+                <a
+                  href={`https://wa.me/${s.contact_whatsapp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Grid kontak ── */}
+        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            {
+              icon: MapPin,
+              label: 'Alamat Kantor',
+              value: address,
+              href: `https://maps.google.com/?q=${encodeURIComponent(address)}`,
+              iconBg: 'bg-orange-100 text-orange-600',
+              linkLabel: 'Buka di Google Maps',
+            },
+            {
+              icon: Phone,
+              label: 'Telepon Kantor',
+              value: s.contact_phone || '(0541) XXX-XXXX',
+              href: `tel:${s.contact_phone}`,
+              iconBg: 'bg-blue-100 text-blue-600',
+              linkLabel: 'Hubungi Sekarang',
+            },
+            {
+              icon: Mail,
+              label: 'Email',
+              value: s.contact_email || 'pusdalops@bpbd.kaltimprov.go.id',
+              href: `mailto:${s.contact_email}`,
+              iconBg: 'bg-emerald-100 text-emerald-600',
+              linkLabel: 'Kirim Email',
+            },
+            {
+              icon: MessageCircle,
+              label: 'WhatsApp Pusdalops',
+              value: `+${s.contact_whatsapp || '62812XXXXXXXX'}`,
+              href: `https://wa.me/${s.contact_whatsapp}`,
+              iconBg: 'bg-green-100 text-green-600',
+              linkLabel: 'Chat WhatsApp',
+            },
+            {
+              icon: Clock,
+              label: 'Jam Operasional',
+              value: s.office_hours || 'Senin – Jumat, 08.00 – 16.30 WITA',
+              iconBg: 'bg-slate-100 text-slate-600',
+              linkLabel: null,
+            },
+            {
+              icon: Phone,
+              label: 'Pusdalops (24 Jam)',
+              value: '112 — Gratis dari semua operator',
+              href: 'tel:112',
+              iconBg: 'bg-red-100 text-red-600',
+              linkLabel: 'Hubungi 112',
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="group flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-md"
+            >
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg}`}
+              >
+                <item.icon className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                  {item.label}
+                </p>
+                <p className="text-navy-800 mt-1 text-sm leading-snug font-semibold">
+                  {item.value}
+                </p>
+              </div>
+              {item.href && item.linkLabel && (
+                <a
+                  href={item.href}
+                  target={item.href.startsWith('http') ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className="text-navy-600 inline-flex items-center gap-1 text-xs font-bold transition hover:text-orange-600"
+                >
+                  {item.linkLabel}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* ── Sosial media ── */}
+        {socials.length > 0 && (
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <p className="text-navy-800 mb-4 text-sm font-bold">Ikuti Kami di Media Sosial</p>
+            <div className="flex flex-wrap gap-3">
+              {socials.map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
-                  target={item.href?.startsWith('http') ? '_blank' : undefined}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-3 rounded-lg bg-white p-4 ring-1 ring-black/6 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  className={`flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition ${item.color}`}
                 >
-                  <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.color}`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-muted-foreground text-[11px]">{item.label}</p>
-                    <p className="text-navy-800 truncate text-sm font-semibold">{item.value}</p>
-                  </div>
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
                 </a>
               ))}
             </div>
           </div>
-
-          {/* ── Kanan: Sidebar sticky ── */}
-          <aside className="space-y-4 lg:sticky lg:top-8">
-            {/* Info kontak lengkap */}
-            <Card className="gap-0 overflow-hidden rounded-lg p-0">
-              <div className="bg-navy-800 px-5 py-3.5">
-                <p className="text-sm font-semibold text-white">Informasi Kontak</p>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {contacts.map((c, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-start gap-4 px-5 py-4 ${c.highlight ? 'bg-red-50' : ''}`}
-                  >
-                    <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${c.color}`}
-                    >
-                      <c.icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-muted-foreground mb-0.5 text-xs">{c.label}</p>
-                      {c.href ? (
-                        <a
-                          href={c.href}
-                          target={c.href.startsWith('http') ? '_blank' : undefined}
-                          rel="noopener noreferrer"
-                          className={`text-sm font-semibold transition hover:underline ${c.highlight ? 'text-red-600' : 'text-navy-800 hover:text-navy-600'}`}
-                        >
-                          {c.value}
-                        </a>
-                      ) : (
-                        <p className="text-navy-800 text-sm font-medium">{c.value}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Sosial */}
-            {socials.length > 0 && (
-              <Card className="gap-0 rounded-lg p-5">
-                <p className="text-navy-800 mb-3 text-sm font-bold">Ikuti Kami</p>
-                <div className="flex flex-wrap gap-2">
-                  {socials.map((s) => (
-                    <a
-                      key={s.label}
-                      href={s.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition ${s.color}`}
-                    >
-                      <s.icon className="h-3.5 w-3.5" />
-                      {s.label}
-                    </a>
-                  ))}
-                </div>
-              </Card>
-            )}
-          </aside>
-        </div>
+        )}
       </div>
     </div>
   )

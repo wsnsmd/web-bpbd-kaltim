@@ -2,7 +2,7 @@
 // Data cuaca diambil client-side via proxy /api/bmkg-cuaca untuk menghindari 403
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { ChevronRight, ExternalLink, AlertTriangle, CloudRain, Clock } from 'lucide-react'
+import { ChevronRight, ExternalLink, AlertTriangle, CloudRain } from 'lucide-react'
 import { CuacaGrid } from './_components/cuaca-grid'
 import { Button } from '@/components/ui/button'
 

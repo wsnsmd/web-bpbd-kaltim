@@ -77,6 +77,7 @@ export function TickerDialog({ open, onOpenChange, item, onSuccess }: Props) {
     },
   })
 
+  // PERBAIKAN: Menambahkan 'form' ke dalam dependency array
   useEffect(() => {
     if (open) {
       form.reset({
@@ -85,7 +86,7 @@ export function TickerDialog({ open, onOpenChange, item, onSuccess }: Props) {
         isActive: item?.isActive ?? true,
       })
     }
-  }, [open, item])
+  }, [open, item, form])
 
   const { isSubmitting } = form.formState
   const watchedIcon = form.watch('icon')

@@ -3,7 +3,7 @@ import { unstable_noStore as noStore } from 'next/cache'
 import { Shield, CloudRain, ClipboardList } from 'lucide-react'
 import { db } from '@/lib/db'
 import { incidents, siteSettings } from '@db/schema'
-import { eq, and, gte, sql, count } from 'drizzle-orm'
+import { eq, and, gte, count } from 'drizzle-orm'
 
 // ── Mapping kode weather BMKG → teks Indonesia ───────────────
 const WEATHER_MAP: Record<number, string> = {
@@ -42,10 +42,12 @@ async function fetchBmkgWeather(adm4: string): Promise<{
     const data = await res.json()
 
     const lokasi = data?.lokasi
+     
     const cuacaList: any[][] = data?.data?.[0]?.cuaca ?? data?.cuaca ?? []
 
     // Ambil jam prakiraan yang paling dekat dengan waktu sekarang
     const now = Date.now()
+     
     let closest: any = null
     let minDiff = Infinity
 

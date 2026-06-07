@@ -1,7 +1,7 @@
 // src/app/admin/(dashboard)/media/_components/media-picker.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { ImageIcon, X, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -51,7 +51,8 @@ export function MediaPicker({
   const open = isControlled ? controlledOpen : internalOpen
   const setOpen = isControlled ? (v: boolean) => onOpenChange?.(v) : setInternalOpen
 
-  async function fetchMedia() {
+  // PERBAIKAN: Gunakan useCallback agar referensi fungsi stabil
+  const fetchMedia = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/media')
@@ -67,11 +68,11 @@ export function MediaPicker({
     } finally {
       setLoading(false)
     }
-  }
+  }, [imageOnly]) // Dependensi pada imageOnly
 
   useEffect(() => {
     if (open) fetchMedia()
-  }, [open])
+  }, [open, fetchMedia])
 
   function handleSelect(url: string) {
     onChange(url)

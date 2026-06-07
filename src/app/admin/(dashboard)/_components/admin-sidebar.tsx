@@ -21,6 +21,7 @@ import {
   HelpCircle,
   LayoutTemplate,
   Database,
+  BarChart2,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -72,6 +73,7 @@ const NAV_MAIN = [
   { title: 'FAQ', href: '/admin/faq', icon: HelpCircle },
   { title: 'Peta & Kejadian', href: '/admin/incidents', icon: MapPin },
   { title: 'Master Data', href: '/admin/master-data', icon: Database },
+  { title: 'Statistik Pengunjung', href: '/admin/analytics', icon: BarChart2 },
 ]
 
 const NAV_SYSTEM = [
@@ -161,7 +163,14 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
                 </Collapsible>
               ) : (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={
+                      pathname === item.href ||
+                      (item.href !== '/admin' && pathname.startsWith(item.href))
+                    }
+                    tooltip={item.title}
+                  >
                     <Link href={item.href!}>
                       <item.icon />
                       <span>{item.title}</span>

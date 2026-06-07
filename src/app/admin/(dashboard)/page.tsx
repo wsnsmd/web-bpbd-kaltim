@@ -2,7 +2,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { news, users, incidents, incidentVictims, incidentDamages, disasterTypes } from '@db/schema'
-import { eq, count, sum, desc, gte, ne, and } from 'drizzle-orm'
+import { eq, count, sum, desc, gte } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/mysql-core'
 import { regions } from '@db/schema'
 import Link from 'next/link'
@@ -21,7 +21,6 @@ import {
   Home,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 function fmtNum(n: number) {
   return new Intl.NumberFormat('id-ID').format(n)

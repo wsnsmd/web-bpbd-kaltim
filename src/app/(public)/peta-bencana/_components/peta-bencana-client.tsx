@@ -1,11 +1,12 @@
 // src/app/(public)/peta-bencana/_components/peta-bencana-client.tsx
+// src/app/(public)/peta-bencana/_components/peta-bencana-client.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapPin, Clock, X, Users, AlertTriangle, List, Map as MapIcon, Phone } from 'lucide-react'
+import { MapPin, X, AlertTriangle, List, Map as MapIcon, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -122,154 +123,7 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
     ditangani: incidents.filter((i) => i.status === 'ditangani').length,
   }
 
-  // ── Init Mapbox dengan Clustering ─────────────────────────
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current || !token) return
-
-    mapboxgl.accessToken = token
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/outdoors-v12',
-      center: [centerLng, centerLat],
-      zoom: 7,
-      projection: 'mercator',
-    })
-    mapRef.current = map
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right')
-
-    map.on('load', () => {
-      // ── GeoJSON source dengan clustering ──
-      const geojson: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: incidents.map((i) => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [i.longitude, i.latitude] },
-          properties: {
-            id: i.id,
-            title: i.title,
-            typeIcon: i.typeIcon,
-            typeColor: i.typeColor,
-            status: i.status,
-          },
-        })),
-      }
-
-      map.addSource('incidents', {
-        type: 'geojson',
-        data: geojson,
-        cluster: true,
-        clusterMaxZoom: 12, // Pada level zoom di atas 12, cluster dibubarkan
-        clusterRadius: 50,
-      })
-
-      // Cluster circle layer
-      map.addLayer({
-        id: 'clusters',
-        type: 'circle',
-        source: 'incidents',
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': [
-            'step',
-            ['get', 'point_count'],
-            '#e85000',
-            5, // < 5: oranye
-            '#c98b00',
-            20, // 5-20: kuning
-            '#1b56a8', // > 20: biru
-          ],
-          'circle-radius': ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
-          'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff',
-          'circle-opacity': 0.9,
-        },
-      })
-
-      // Cluster count label layer
-      map.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: 'incidents',
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': '{point_count_abbreviated}',
-          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-          'text-size': 13,
-        },
-        paint: { 'text-color': '#ffffff' },
-      })
-
-      // --- PERBAIKAN: Layer invisible untuk mendeteksi marker tak ter-cluster ---
-      map.addLayer({
-        id: 'unclustered-point',
-        type: 'circle',
-        source: 'incidents',
-        filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-radius': 0, // Dibuat invisible
-          'circle-opacity': 0,
-        },
-      })
-
-      // Individual marker — buat HTML element untuk semua (default tersembunyi)
-      incidents.forEach((incident) => {
-        if (!map.getSource('incidents')) return
-        addCustomMarker(map, incident)
-      })
-
-      // --- PERBAIKAN: Sinkronisasi Tampilan Marker vs Cluster saat dirender ---
-      map.on('render', () => {
-        if (!map.isStyleLoaded() || !map.getSource('incidents')) return
-
-        // 1. Sembunyikan SEMUA custom HTML marker setiap frame digerakkan
-        markersRef.current.forEach((marker) => {
-          marker.getElement().style.display = 'none'
-        })
-
-        // 2. Tanya Mapbox: Feature apa saja yang sedang tampil tanpa duster ('unclustered-point')
-        const unclusteredFeatures = map.queryRenderedFeatures({
-          layers: ['unclustered-point'],
-        })
-
-        // 3. Tampilkan hanya marker-marker yang terdeteksi berdiri sendiri
-        unclusteredFeatures.forEach((feature) => {
-          const id = feature.properties?.id
-          if (id !== undefined) {
-            const marker = markersRef.current.get(Number(id))
-            if (marker) {
-              marker.getElement().style.display = 'block'
-            }
-          }
-        })
-      })
-
-      // Klik cluster → zoom in
-      map.on('click', 'clusters', (e) => {
-        const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] })
-        const clusterId = features[0].properties?.cluster_id
-        const source = map.getSource('incidents') as mapboxgl.GeoJSONSource
-        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-          if (err) return
-          const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number]
-          map.easeTo({ center: coords, zoom: zoom ?? 12 })
-        })
-      })
-
-      map.on('mouseenter', 'clusters', () => {
-        map.getCanvas().style.cursor = 'pointer'
-      })
-      map.on('mouseleave', 'clusters', () => {
-        map.getCanvas().style.cursor = ''
-      })
-    })
-
-    return () => {
-      map.remove()
-      mapRef.current = null
-      markersRef.current.clear()
-    }
-  }, [token])
-
+  // ── Fungsi addCustomMarker dipindahkan ke atas sebelum digunakan ──
   function addCustomMarker(map: mapboxgl.Map, incident: Incident) {
     const st = STATUS[incident.status as keyof typeof STATUS] ?? STATUS.aktif
 
@@ -323,6 +177,153 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
     markersRef.current.set(incident.id, marker)
   }
 
+  // ── Init Mapbox dengan Clustering ─────────────────────────
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current || !token) return
+
+    mapboxgl.accessToken = token
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: 'mapbox://styles/mapbox/outdoors-v12',
+      center: [centerLng, centerLat],
+      zoom: 7,
+      projection: 'mercator',
+    })
+    mapRef.current = map
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+
+    // Simpan currentMarkers untuk cleanup
+    const currentMarkers = markersRef.current
+
+    map.on('load', () => {
+      // ── GeoJSON source dengan clustering ──
+      const geojson: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: incidents.map((i) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [i.longitude, i.latitude] },
+          properties: {
+            id: i.id,
+            title: i.title,
+            typeIcon: i.typeIcon,
+            typeColor: i.typeColor,
+            status: i.status,
+          },
+        })),
+      }
+
+      map.addSource('incidents', {
+        type: 'geojson',
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom: 12,
+        clusterRadius: 50,
+      })
+
+      // Cluster circle layer
+      map.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: 'incidents',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': ['step', ['get', 'point_count'], '#e85000', 5, '#c98b00', 20, '#1b56a8'],
+          'circle-radius': ['step', ['get', 'point_count'], 20, 5, 28, 20, 36],
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+          'circle-opacity': 0.9,
+        },
+      })
+
+      // Cluster count label layer
+      map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'incidents',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 13,
+        },
+        paint: { 'text-color': '#ffffff' },
+      })
+
+      // Layer invisible untuk mendeteksi marker tak ter-cluster
+      map.addLayer({
+        id: 'unclustered-point',
+        type: 'circle',
+        source: 'incidents',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-radius': 0,
+          'circle-opacity': 0,
+        },
+      })
+
+      // Individual marker — buat HTML element untuk semua (default tersembunyi)
+      incidents.forEach((incident) => {
+        if (!map.getSource('incidents')) return
+        addCustomMarker(map, incident)
+      })
+
+      // Sinkronisasi Tampilan Marker vs Cluster saat dirender
+      map.on('render', () => {
+        if (!map.isStyleLoaded() || !map.getSource('incidents')) return
+
+        // 1. Sembunyikan SEMUA custom HTML marker setiap frame digerakkan
+        currentMarkers.forEach((marker) => {
+          marker.getElement().style.display = 'none'
+        })
+
+        // 2. Tanya Mapbox: Feature apa saja yang sedang tampil tanpa cluster
+        const unclusteredFeatures = map.queryRenderedFeatures({
+          layers: ['unclustered-point'],
+        })
+
+        // 3. Tampilkan hanya marker-marker yang terdeteksi berdiri sendiri
+        unclusteredFeatures.forEach((feature) => {
+          const id = feature.properties?.id
+          if (id !== undefined) {
+            const marker = currentMarkers.get(Number(id))
+            if (marker) {
+              marker.getElement().style.display = 'block'
+            }
+          }
+        })
+      })
+
+      // Klik cluster → zoom in
+      map.on('click', 'clusters', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] })
+        const clusterId = features[0].properties?.cluster_id
+        const source = map.getSource('incidents') as mapboxgl.GeoJSONSource
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err) return
+          const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number]
+          map.easeTo({ center: coords, zoom: zoom ?? 12 })
+        })
+      })
+
+      map.on('mouseenter', 'clusters', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'clusters', () => {
+        map.getCanvas().style.cursor = ''
+      })
+    })
+
+    return () => {
+      currentMarkers.forEach((marker) => marker.remove())
+      currentMarkers.clear()
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, centerLat, centerLng, incidents])
+
   // Fly to + highlight saat selected
   useEffect(() => {
     if (!selected || !mapRef.current) return
@@ -336,7 +337,7 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
       const el = m.getElement()
       el.style.zIndex = id === selected.id ? '10' : '1'
 
-      // Target elemen DIV bagian dalam (inner) agar tidak menimpa transform Mapbox
+      // Target elemen DIV bagian dalam (inner)
       const inner = el.querySelector(`#marker-inner-${id}`) as HTMLDivElement
       if (inner) {
         inner.style.transform = id === selected.id ? 'scale(1.35)' : 'scale(1)'
@@ -345,6 +346,7 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
   }, [selected])
 
   return (
+    // ... rest of the component (sama seperti sebelumnya)
     <div className="flex h-screen flex-col overflow-hidden">
       {/* ── Top bar ── */}
       <div className="bg-navy-900 border-navy-800 z-10 flex shrink-0 items-center gap-3 border-b px-4 py-2.5">
@@ -410,7 +412,7 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
 
       {/* ── Layout ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar kiri */}
+        {/* Sidebar kiri - sama seperti sebelumnya */}
         <div
           className={cn(
             'flex w-80 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white',

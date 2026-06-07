@@ -1263,8 +1263,8 @@ async function seed() {
       await db.insert(incidentVictims).values(
         victims.map((v) => ({
           incidentId: id,
-          impactType: v.impactType as any,
-          ageGroup: v.ageGroup as any,
+          impactType: v.impactType as typeof incidentVictims.$inferInsert.impactType,
+          ageGroup: v.ageGroup as typeof incidentVictims.$inferInsert.ageGroup,
           countMale: v.countMale,
           countFemale: v.countFemale,
           countTotal: v.countMale + v.countFemale,

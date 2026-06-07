@@ -4,7 +4,7 @@
 import { db } from '@/lib/db'
 import { downloads } from '@db/schema'
 import { auth } from '@/lib/auth'
-import { eq, asc, sql } from 'drizzle-orm'
+import { eq, asc } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 

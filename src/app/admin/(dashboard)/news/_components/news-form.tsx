@@ -75,14 +75,6 @@ function slugify(str: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-function toDatetimeLocal(date?: Date | string | null): string {
-  if (!date) return ''
-  const d = typeof date === 'string' ? new Date(date) : date
-  if (isNaN(d.getTime())) return ''
-  // Format: YYYY-MM-DDTHH:mm (required by datetime-local input)
-  return d.toISOString().slice(0, 16)
-}
-
 export function NewsForm({ mode, newsId, defaultValues, categories }: Props) {
   const router = useRouter()
 

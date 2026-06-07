@@ -37,7 +37,7 @@ export function NewsCard({
   categorySlug,
   authorName,
   publishedAt,
-  featured = false,
+  // featured = false,
   className,
 }: NewsCardProps) {
   const badgeVariant = CATEGORY_VARIANT[categorySlug ?? ''] ?? 'default'

@@ -4,7 +4,7 @@
 import { db } from '@/lib/db'
 import { incidents, incidentVictims, incidentDamages } from '@db/schema'
 import { auth } from '@/lib/auth'
-import { eq, desc } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 

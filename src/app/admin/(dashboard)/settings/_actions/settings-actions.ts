@@ -4,7 +4,7 @@
 import { db } from '@/lib/db'
 import { siteSettings } from '@db/schema'
 import { auth } from '@/lib/auth'
-import { eq, inArray } from 'drizzle-orm'
+import { inArray } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export async function getSettingsAction(keys: string[]): Promise<Record<string, string>> {

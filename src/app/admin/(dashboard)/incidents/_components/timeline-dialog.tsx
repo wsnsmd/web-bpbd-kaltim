@@ -1,11 +1,11 @@
 // src/app/admin/(dashboard)/incidents/_components/timeline-dialog.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Plus, Clock, ChevronDown } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -114,6 +114,13 @@ export function TimelineDialog({ open, onOpenChange, incident }: Props) {
     },
   })
 
+  const loadTimelines = useCallback(async () => {
+    setLoading(true)
+    const data = await getTimelineAction(incident.id)
+    setTimelines(data as TimelineEntry[])
+    setLoading(false)
+  }, [incident.id])
+
   useEffect(() => {
     if (open) {
       loadTimelines()
@@ -125,14 +132,7 @@ export function TimelineDialog({ open, onOpenChange, incident }: Props) {
         loggedAt: new Date().toISOString().slice(0, 16),
       })
     }
-  }, [open])
-
-  async function loadTimelines() {
-    setLoading(true)
-    const data = await getTimelineAction(incident.id)
-    setTimelines(data as TimelineEntry[])
-    setLoading(false)
-  }
+  }, [open, form, loadTimelines])
 
   const { isSubmitting } = form.formState
 
@@ -306,7 +306,7 @@ export function TimelineDialog({ open, onOpenChange, incident }: Props) {
                 <div className="absolute top-0 bottom-0 left-4.75 w-0.5 bg-slate-200" />
 
                 <div className="space-y-5">
-                  {timelines.map((entry, i) => {
+                  {timelines.map((entry) => {
                     const eventCfg =
                       EVENT_TYPES.find((t) => t.value === entry.eventType) ?? EVENT_TYPES[7]
                     return (

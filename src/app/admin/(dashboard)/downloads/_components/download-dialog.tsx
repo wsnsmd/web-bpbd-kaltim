@@ -1,7 +1,7 @@
 // src/app/admin/(dashboard)/downloads/_components/download-dialog.tsx
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -88,7 +88,11 @@ function IconPreview({ name, scheme }: { name: string; scheme: string }) {
 
 export function DownloadDialog({ open, onOpenChange, item, onSuccess, categories }: Props) {
   const isEdit = !!item
-  const catList = categories?.length ? categories : DEFAULT_DOWNLOAD_CATEGORIES
+
+  // Menggunakan useMemo agar referensi array stabil dan tidak menyebabkan infinite render loop
+  const catList = useMemo(() => {
+    return categories?.length ? categories : DEFAULT_DOWNLOAD_CATEGORIES
+  }, [categories])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -117,7 +121,7 @@ export function DownloadDialog({ open, onOpenChange, item, onSuccess, categories
         isActive: item?.isActive ?? true,
       })
     }
-  }, [open, item])
+  }, [open, item, catList, form])
 
   const { isSubmitting } = form.formState
   const watchedIcon = form.watch('icon')
