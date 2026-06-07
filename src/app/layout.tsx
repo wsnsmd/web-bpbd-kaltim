@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import { DM_Sans, DM_Serif_Display } from 'next/font/google'
 import { AnalyticsProvider } from '@/components/analytics-provider'
+import { PageProgress } from '@/components/page-progress'
 import { Providers } from '@components/providers'
 import './globals.css'
 import { cn } from '@/lib/utils'
@@ -22,7 +23,7 @@ const dmSerif = DM_Serif_Display({
 export const metadata: Metadata = {
   title: {
     default: 'BPBD Provinsi Kalimantan Timur',
-    template: '%s | BPBD Provinsi Kalimantan Timur',
+    template: '%s - BPBD Provinsi Kalimantan Timur',
   },
   description:
     'Portal resmi Badan Penanggulangan Bencana Daerah Provinsi Kalimantan Timur. Pusat koordinasi, informasi, dan layanan kebencanaan wilayah Benua Etam.',
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className={`${dmSans.variable} ${dmSerif.variable} antialiased`}>
+        <PageProgress />
         <Providers>
           {children}
           <AnalyticsProvider />

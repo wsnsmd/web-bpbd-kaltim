@@ -1,27 +1,35 @@
 // src/proxy.ts
 import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import { hasPermission, ROUTE_PERMISSIONS } from '@/lib/permissions'
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const isLoggedIn = !!req.auth
+  const userRoles = (req.auth?.user?.roles as string[]) ?? []
 
-  // Proteksi semua route /admin kecuali /admin/login
+  // ── 1. Redirect ke login jika belum auth ────────────────────
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL('/admin/login', req.url))
+      const loginUrl = new URL('/admin/login', req.url)
+      loginUrl.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(loginUrl)
     }
 
-    // Hanya super_admin yang boleh akses /admin/users
-    if (pathname.startsWith('/admin/users')) {
-      const roles = req.auth?.user?.roles ?? []
-      if (!roles.includes('super_admin')) {
-        return NextResponse.redirect(new URL('/admin', req.url))
+    // ── 2. Cek permission per route ──────────────────────────
+    for (const { pattern, permission } of ROUTE_PERMISSIONS) {
+      if (pattern.test(pathname)) {
+        if (!hasPermission(userRoles, permission)) {
+          // Redirect ke dashboard dengan pesan akses ditolak
+          const url = new URL('/admin/forbidden', req.url)
+          return NextResponse.redirect(url)
+        }
+        break
       }
     }
   }
 
-  // Redirect ke /admin jika sudah login tapi akses /admin/login
+  // ── 3. Redirect jika sudah login tapi akses login page ──────
   if (pathname === '/admin/login' && isLoggedIn) {
     return NextResponse.redirect(new URL('/admin', req.url))
   }

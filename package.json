@@ -19,7 +19,8 @@
     "db:seed:profil": "bun run database/seeds/profile-pages.ts",
     "db:seed:regions": "bun run database/seeds/regions.ts",
     "db:seed:master-data": "bun run database/seeds/master-data.ts",
-    "db:seed:incidents-dummy": "bun run database/seeds/incidents-dummy-seed.ts"
+    "db:seed:incidents-dummy": "bun run database/seeds/incidents-dummy-seed.ts",
+    "db:seed:roles": "bun run database/seeds/roles.ts"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
