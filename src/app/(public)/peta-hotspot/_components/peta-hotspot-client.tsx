@@ -425,7 +425,7 @@ export function PetaHotspotClient({ mapToken, centerLat, centerLng }: Props) {
 
         {/* Legend */}
         <div
-          className="absolute right-4 bottom-4 z-10 space-y-2 rounded-lg border border-orange-400 bg-black/70 p-3 text-xs backdrop-blur-sm"
+          className="absolute z-10 space-y-2 rounded-lg border border-orange-400 bg-black/70 p-3 text-xs backdrop-blur-sm"
           style={{ top: '8px', right: '50px' }}
         >
           <p className="mb-2 text-[10px] font-bold tracking-wider text-white/70 uppercase">

@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { getSiteSettings } from '@/lib/site-settings'
 import { getMenuItems, buildMenuTree } from '@/lib/menu'
 import { MobileMenu } from '@/components/layout/mobile-menu'
+import { GlobalSearch } from '@/components/layout/global-search'
 import Image from 'next/image'
 
 export default async function Header() {
@@ -69,7 +70,7 @@ export default async function Header() {
 
       {/* Main Header */}
       <header className="border-border bg-background sticky top-0 z-50 border-b shadow-sm">
-        <div className="container-content max-w-content mx-auto flex items-center justify-between gap-6 px-6 py-3">
+        <div className="container-content max-w-content mx-auto flex items-center justify-between gap-4 px-6 py-3">
           {/* Brand */}
           <Link href="/" className="flex shrink-0 items-center gap-3">
             {s.site_logo ? (
@@ -142,18 +143,24 @@ export default async function Header() {
             </NavigationMenu>
           </nav>
 
-          {/* Desktop CTA */}
-          <Button
-            asChild
-            className="hidden shrink-0 rounded-full bg-orange-500 px-4 py-2 text-[11px] font-bold tracking-wide text-white uppercase hover:bg-orange-600 lg:flex"
-          >
-            <a href={`tel:${emergencyNumber}`}>
-              <Phone className="mr-2 h-3 w-3" /> {emergencyNumber} — Darurat
-            </a>
-          </Button>
+          {/* Right side actions */}
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Global Search */}
+            <GlobalSearch />
 
-          {/* Mobile Menu — Client Component */}
-          <MobileMenu navTree={navTree} emergencyNumber={emergencyNumber} />
+            {/* Emergency CTA */}
+            <Button
+              asChild
+              className="hidden rounded-full bg-orange-500 px-4 py-2 text-[11px] font-bold tracking-wide text-white uppercase hover:bg-orange-600 lg:flex"
+            >
+              <a href={`tel:${emergencyNumber}`}>
+                <Phone className="mr-2 h-3 w-3" /> {emergencyNumber} — Darurat
+              </a>
+            </Button>
+
+            {/* Mobile Menu */}
+            <MobileMenu navTree={navTree} emergencyNumber={emergencyNumber} />
+          </div>
         </div>
       </header>
     </>
