@@ -1,10 +1,9 @@
 // src/app/(public)/peringatan-dini/page.tsx
-// Data cuaca diambil client-side via proxy /api/bmkg-cuaca untuk menghindari 403
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { ChevronRight, ExternalLink, AlertTriangle, CloudRain } from 'lucide-react'
 import { CuacaGrid } from './_components/cuaca-grid'
-import { Button } from '@/components/ui/button'
+import { PeringatanGrid } from './_components/peringatan-grid'
 
 export const metadata = {
   title: 'Peringatan Dini Cuaca',
@@ -65,6 +64,24 @@ export const KOTA_KALTIM = [
   },
 ]
 
+// Skeleton card
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse space-y-3 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className="flex justify-between">
+        <div className="h-4 w-2/3 rounded bg-slate-100" />
+        <div className="h-6 w-6 rounded-full bg-slate-100" />
+      </div>
+      <div className="h-3 w-1/2 rounded bg-slate-100" />
+      <div className="grid grid-cols-2 gap-2">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-4 rounded bg-slate-100" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function PeringatanDiniPage() {
   return (
     <div className="min-h-screen bg-slate-50">
@@ -85,103 +102,79 @@ export default function PeringatanDiniPage() {
                 Data Real-time BMKG
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl">
-                Prakiraan & Peringatan Dini Cuaca
+                Peringatan Dini & Prakiraan Cuaca
               </h1>
               <p className="text-navy-300 mt-1 text-sm">
-                10 Kabupaten/Kota Kalimantan Timur · Diperbarui setiap 1 jam
+                Kalimantan Timur · Diperbarui setiap 10 menit
               </p>
             </div>
-            <Button
-              asChild
-              variant="ghost"
-              className="shrink-0 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+            <a
+              href="https://www.bmkg.go.id/cuaca/peringatan-dini-cuaca/64"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-white/20"
             >
-              <a
-                href="https://www.bmkg.go.id/cuaca/peringatan-dini-cuaca/64"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="mr-2 h-3.5 w-3.5" />
-                Peringatan Dini Resmi BMKG
-              </a>
-            </Button>
+              <ExternalLink className="h-3.5 w-3.5" />
+              Buka di BMKG
+            </a>
           </div>
         </div>
       </div>
 
-      <div className="container-content mx-auto max-w-(--width-content) space-y-8 px-4 py-8">
-        {/* Grid cuaca — client component yang fetch dari proxy */}
-        <Suspense
-          fallback={
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
-                >
-                  <div className="mb-2 h-4 w-3/4 rounded bg-slate-100" />
-                  <div className="mb-4 h-3 w-1/2 rounded bg-slate-100" />
-                  <div className="mb-3 h-8 w-1/4 rounded bg-slate-100" />
-                  <div className="grid grid-cols-2 gap-2">
-                    {[1, 2, 3, 4].map((j) => (
-                      <div key={j} className="h-4 rounded bg-slate-100" />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          }
-        >
-          <CuacaGrid kotaList={KOTA_KALTIM} />
-        </Suspense>
-
-        {/* Banner peringatan dini resmi */}
-        <div className="mt-4 mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-            </div>
-            <div className="flex-1">
-              <p className="mb-1 font-bold text-amber-800">Peringatan Dini Cuaca Resmi BMKG</p>
-              <p className="mb-4 text-sm text-amber-700">
-                Untuk peringatan dini cuaca resmi (badai, hujan lebat, angin kencang, dan potensi
-                bencana hidrometeorologi) silakan kunjungi langsung halaman BMKG Kalimantan Timur.
+      <div className="container-content mx-auto max-w-(--width-content) space-y-10 px-4 py-8">
+        {/* ── Peringatan Dini Aktif dari RSS BMKG ── */}
+        <section>
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-navy-800 flex items-center gap-2 text-base font-bold">
+                <span className="flex h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                Peringatan Dini Aktif — Kalimantan Timur
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Sumber: BMKG Nowcasting RSS · Filter wilayah Kalimantan Timur
               </p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {/* Tombol 1: Peringatan Dini Kaltim */}
-                <Button asChild className="rounded-xl font-bold">
-                  <a
-                    href="https://www.bmkg.go.id/cuaca/peringatan-dini-cuaca/64"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Peringatan Dini Kaltim
-                  </a>
-                </Button>
-
-                {/* Tombol 2: Prakiraan Detail BMKG */}
-                <Button
-                  asChild
-                  variant="outline"
-                  className="rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50"
-                >
-                  <a
-                    href="https://www.bmkg.go.id/cuaca/prakiraan-cuaca-indonesia.bmkg?Prov=64"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <CloudRain className="mr-2 h-4 w-4" />
-                    Prakiraan Detail BMKG
-                  </a>
-                </Button>
-              </div>
             </div>
           </div>
-        </div>
+          <Suspense
+            fallback={
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            }
+          >
+            <PeringatanGrid />
+          </Suspense>
+        </section>
 
-        <p className="text-center text-xs text-slate-400">
-          Data prakiraan cuaca dari API terbuka{' '}
+        {/* ── Prakiraan Cuaca 10 Kab/Kota ── */}
+        <section>
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-navy-800 flex items-center gap-2 text-base font-bold">
+                <CloudRain className="h-4 w-4 text-blue-500" />
+                Prakiraan Cuaca — 10 Kabupaten/Kota
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-400">Sumber: API BMKG · Cache 1 jam</p>
+            </div>
+          </div>
+          <Suspense
+            fallback={
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            }
+          >
+            <CuacaGrid kotaList={KOTA_KALTIM} />
+          </Suspense>
+        </section>
+
+        {/* Credit */}
+        <p className="pb-4 text-center text-xs text-slate-400">
+          Data dari API terbuka{' '}
           <a
             href="https://data.bmkg.go.id"
             target="_blank"
@@ -190,7 +183,7 @@ export default function PeringatanDiniPage() {
           >
             BMKG
           </a>{' '}
-          · Cache 1 jam · Wajib mencantumkan BMKG sebagai sumber data
+          · Peringatan dini cache 10 menit · Prakiraan cuaca cache 1 jam
         </p>
       </div>
     </div>

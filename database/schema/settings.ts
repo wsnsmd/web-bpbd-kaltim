@@ -49,4 +49,10 @@ export const DEFAULT_SETTINGS = {
   map_latitude: '-0.5022',
   map_longitude: '117.1364',
   map_zoom: '15',
+
+  maintenance_mode: 'false',
+  maintenance_title: 'Sedang Dalam Pemeliharaan',
+  maintenance_message:
+    'Website sedang dalam proses pemeliharaan untuk meningkatkan layanan. Kami akan segera kembali.',
+  maintenance_estimated: '',
 }

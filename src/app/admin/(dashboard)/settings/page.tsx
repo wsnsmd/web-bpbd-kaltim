@@ -8,6 +8,7 @@ import { ContactSettingsForm } from './_components/contact-settings-form'
 import { SeoSettingsForm } from './_components/seo-settings-form'
 import { MediaSettingsForm } from './_components/media-settings-form'
 import { OperationalSettingsForm } from './_components/operational-settings-form'
+import { MaintenanceSettingsForm } from './_components/maintenance-settings-form'
 import { DEFAULT_SETTINGS } from '@db/schema/settings'
 
 export const metadata = { title: 'Pengaturan Situs' }
@@ -33,6 +34,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="operational">Operasional</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="media">Media</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -98,6 +100,20 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent>
               <MediaSettingsForm settings={settings} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="maintenance">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Mode Maintenance</CardTitle>
+              <CardDescription>
+                Aktifkan untuk menampilkan halaman maintenance kepada pengunjung.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MaintenanceSettingsForm settings={settings} />
             </CardContent>
           </Card>
         </TabsContent>

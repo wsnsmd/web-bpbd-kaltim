@@ -7,6 +7,8 @@ import { Providers } from '@components/providers'
 import './globals.css'
 import { cn } from '@/lib/utils'
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bpbd.kaltimprov.go.id'
+
 const dmSans = DM_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
@@ -27,12 +29,62 @@ export const metadata: Metadata = {
   },
   description:
     'Portal resmi Badan Penanggulangan Bencana Daerah Provinsi Kalimantan Timur. Pusat koordinasi, informasi, dan layanan kebencanaan wilayah Benua Etam.',
-  keywords: ['BPBD', 'Kalimantan Timur', 'Kaltim', 'bencana', 'penanggulangan bencana'],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
+  keywords: [
+    'BPBD',
+    'Kalimantan Timur',
+    'Kaltim',
+    'bencana',
+    'penanggulangan bencana',
+    'pusdalops',
+  ],
+  authors: [{ name: 'BPBD Provinsi Kalimantan Timur' }],
+  creator: 'BPBD Provinsi Kalimantan Timur',
+  publisher: 'Pemerintah Provinsi Kalimantan Timur',
+  metadataBase: new URL(BASE_URL),
+
+  // ── Favicon & Icons ──────────────────────────────────────────
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+    shortcut: '/favicon.ico',
+  },
+
+  // ── PWA Manifest ─────────────────────────────────────────────
+  manifest: '/site.webmanifest',
+
+  // ── Open Graph (media sosial preview) ────────────────────────
   openGraph: {
-    siteName: 'BPBD Provinsi Kalimantan Timur',
-    locale: 'id_ID',
     type: 'website',
+    locale: 'id_ID',
+    url: BASE_URL,
+    siteName: 'BPBD Provinsi Kalimantan Timur',
+    title: 'BPBD Provinsi Kalimantan Timur',
+    description: 'Portal resmi penanggulangan bencana Provinsi Kalimantan Timur.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'BPBD Kaltim' }],
+  },
+
+  // ── Twitter Card ─────────────────────────────────────────────
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BPBD Provinsi Kalimantan Timur',
+    description: 'Portal resmi penanggulangan bencana Provinsi Kalimantan Timur.',
+    images: ['/og-image.png'],
+  },
+
+  // ── Misc ─────────────────────────────────────────────────────
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+    },
   },
 }
 

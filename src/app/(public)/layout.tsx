@@ -3,10 +3,12 @@ import Header from '@components/layout/header'
 import Footer from '@components/layout/footer'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { EmergencyTicker } from '@components/shared/emergency-ticker'
+import { MaintenanceBanner } from '@/components/layout/maintenance-banner'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <MaintenanceBanner />
       <Header />
       <EmergencyTicker />
       <main id="main-content" tabIndex={-1}>

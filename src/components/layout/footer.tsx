@@ -1,11 +1,21 @@
 // src/components/layout/footer.tsx
 import Link from 'next/link'
-import { Shield, MapPin, Phone, Mail, Clock, ExternalLink, ChevronRight } from 'lucide-react'
+import {
+  Shield,
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  ExternalLink,
+  ChevronRight,
+  ShieldAlert,
+} from 'lucide-react'
 import { SiInstagram, SiFacebook, SiYoutube, SiX, SiWhatsapp } from 'react-icons/si'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { getSiteSettings } from '@/lib/site-settings'
 import { getMenuItems } from '@/lib/menu'
+import Image from 'next/image'
 
 export default async function Footer() {
   const [s, footerQuick, footerInstansi] = await Promise.all([
@@ -71,13 +81,27 @@ export default async function Footer() {
           {/* Kolom 1: Brand */}
           <div className="space-y-5">
             <div className="flex items-center gap-3">
-              <div className="bg-navy-800 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10">
-                <Shield className="text-gold-300 h-5 w-5" />
+              <div className="bg-navy-800 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white">
+                <Link href="/" className="flex shrink-0 items-center gap-3">
+                  {s.site_logo ? (
+                    <Image
+                      src={s.site_logo}
+                      alt={s.site_name}
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 rounded-lg object-contain"
+                    />
+                  ) : (
+                    <div className="bg-navy-700 flex h-10 w-10 items-center justify-center rounded-lg">
+                      <ShieldAlert className="h-5 w-5 text-white" />
+                    </div>
+                  )}
+                </Link>
               </div>
               <div>
                 <p className="text-base leading-none font-bold tracking-tight text-white">BPBD</p>
                 <p className="text-navy-400 mt-0.5 text-[11px] font-bold tracking-widest uppercase">
-                  Prov. Kalimantan Timur
+                  Prov. Kaltim
                 </p>
               </div>
             </div>
