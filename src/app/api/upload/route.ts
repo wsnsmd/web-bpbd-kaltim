@@ -9,7 +9,11 @@ import path from 'path'
 import fs from 'fs/promises'
 import { nanoid } from 'nanoid'
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
+// PERBAIKAN 1: Deteksi mode produksi/standalone dan arahkan ke path absolut VPS Anda
+// Ganti path absolut di bawah dengan lokasi root proyek Anda di VPS
+const isProd = process.env.NODE_ENV === 'production'
+const BASE_DIR = isProd ? '/var/www/web-bpbd-kaltim' : process.cwd()
+const UPLOAD_DIR = path.join(BASE_DIR, 'public', 'uploads')
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
 const DOCUMENT_TYPES = [
@@ -28,7 +32,6 @@ const ALLOWED_TYPES = [...IMAGE_TYPES, ...DOCUMENT_TYPES]
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024 // 5MB
 const DOCUMENT_MAX_SIZE = 20 * 1024 * 1024 // 20MB
 
-// Extension dari MIME type
 const MIME_TO_EXT: Record<string, string> = {
   'application/pdf': 'pdf',
   'application/msword': 'doc',
@@ -66,29 +69,40 @@ export async function POST(req: NextRequest) {
 
     if (file.size > maxSize) {
       return NextResponse.json(
-        {
-          error: `Ukuran file maksimal ${isImage ? '5MB' : '20MB'}`,
-        },
+        { error: `Ukuran file maksimal ${isImage ? '5MB' : '20MB'}` },
         { status: 400 }
       )
     }
 
+    // Pastikan direktori ada
     await fs.mkdir(UPLOAD_DIR, { recursive: true })
 
-    const buffer = Buffer.from(await file.arrayBuffer())
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // PERBAIKAN 2: Pastikan buffer tidak kosong karena koneksi terputus
+    if (buffer.length === 0) {
+      return NextResponse.json({ error: 'Data file rusak atau kosong' }, { status: 400 })
+    }
+
     let filename: string
     let mimeType = file.type
     let width: number | undefined
     let height: number | undefined
 
     if (isImage) {
-      // Gambar: konversi ke WebP + optimasi
       filename = `${nanoid(12)}.webp`
       const filepath = path.join(UPLOAD_DIR, filename)
       const image = sharp(buffer)
-      const meta = await image.metadata()
-      width = meta.width
-      height = meta.height
+
+      // PERBAIKAN 3: Amankan pembacaan metadata
+      try {
+        const meta = await image.metadata()
+        width = meta.width
+        height = meta.height
+      } catch (metaError) {
+        console.warn('[SHARP META WARNING] Gagal membaca metadata, mengabaikan dimensi.', metaError)
+      }
 
       await image
         .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true })
@@ -97,7 +111,6 @@ export async function POST(req: NextRequest) {
 
       mimeType = 'image/webp'
     } else {
-      // Dokumen: simpan langsung tanpa konversi
       const ext = MIME_TO_EXT[file.type] ?? 'bin'
       filename = `${nanoid(12)}.${ext}`
       const filepath = path.join(UPLOAD_DIR, filename)
@@ -108,7 +121,6 @@ export async function POST(req: NextRequest) {
     const stat = await fs.stat(filepath)
     const url = `/uploads/${filename}`
 
-    // Simpan ke DB — select by url karena MariaDB tidak support $returningId
     await db.insert(media).values({
       filename,
       originalName: file.name,
@@ -124,29 +136,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, media: saved })
   } catch (error) {
-    console.error('[UPLOAD ERROR]', error)
+    // Tampilkan error spesifik di PM2 logs untuk kemudahan debug di VPS
+    console.error('[UPLOAD ERROR DETAILED]', error)
     return NextResponse.json({ error: 'Gagal mengupload file' }, { status: 500 })
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const session = await auth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const { id } = await req.json()
-    if (!id) return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 })
-
-    const [item] = await db.select().from(media).where(eq(media.id, id))
-    if (!item) return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 404 })
-
-    const filepath = path.join(process.cwd(), 'public', item.url)
-    await fs.unlink(filepath).catch(() => {})
-    await db.delete(media).where(eq(media.id, id))
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('[DELETE ERROR]', error)
-    return NextResponse.json({ error: 'Gagal menghapus file' }, { status: 500 })
   }
 }
