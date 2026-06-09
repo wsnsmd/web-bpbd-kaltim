@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
 
   // ── PWA Manifest ─────────────────────────────────────────────
-  manifest: '/site.webmanifest',
+  // manifest: '/site.webmanifest',
 
   // ── Open Graph (media sosial preview) ────────────────────────
   openGraph: {
