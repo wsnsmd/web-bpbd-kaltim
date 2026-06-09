@@ -338,3 +338,39 @@
   @apply text-muted-foreground pointer-events-none float-left h-0;
   content: attr(data-placeholder);
 }
+.prose figure.img-figure {
+  margin: 1rem 0;
+  display: block;
+}
+.prose figure.img-figure[data-align='left'] {
+  text-align: left;
+}
+.prose figure.img-figure[data-align='center'] {
+  text-align: center;
+}
+.prose figure.img-figure[data-align='right'] {
+  text-align: right;
+}
+.prose figure.img-figure img {
+  display: inline-block;
+  border-radius: 0.5rem;
+}
+
+/* Di editor Tiptap langsung */
+.tiptap figure.img-figure {
+  margin: 0.75rem 0;
+  display: block;
+}
+.tiptap figure.img-figure[data-align='center'] {
+  text-align: center;
+}
+.tiptap figure.img-figure[data-align='right'] {
+  text-align: right;
+}
+.tiptap figure.img-figure[data-align='left'] {
+  text-align: left;
+}
+.tiptap figure.img-figure img {
+  display: inline-block;
+  border-radius: 0.5rem;
+}

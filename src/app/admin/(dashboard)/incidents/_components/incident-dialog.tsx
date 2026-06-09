@@ -36,7 +36,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createIncidentAction, updateIncidentAction } from '../_actions/incidents-actions'
 import { LocationSelect } from './location-select'
 
-// Types dari server — di-pass sebagai props
 interface DisasterType {
   id: number
   name: string
@@ -52,6 +51,13 @@ interface Region {
   name: string
 }
 
+// Aset yang menggunakan satuan luas (hektar) bukan unit
+const AREA_ASSETS = ['Lahan', 'Sawah', 'Hutan', 'Kebun', 'Kolam'] as const
+type AreaAsset = (typeof AREA_ASSETS)[number]
+function isAreaAsset(name: string): name is AreaAsset {
+  return AREA_ASSETS.includes(name as AreaAsset)
+}
+
 const victimSchema = z.object({
   impactType: z.enum(['meninggal', 'hilang', 'luka_sakit', 'menderita', 'mengungsi']),
   ageGroup: z.enum(['anak', 'dewasa', 'lansia', 'tidak_diketahui']),
@@ -62,9 +68,14 @@ const victimSchema = z.object({
 
 const damageSchema = z.object({
   assetName: z.string().min(1, 'Nama aset wajib diisi'),
+  // Unit aset (rumah, jembatan, dll) — tidak dipakai untuk aset luas
   heavyDamage: z.number(),
   moderateDamage: z.number(),
   lightDamage: z.number(),
+  // Luas area dalam hektar — hanya untuk aset Lahan/Sawah/Hutan/Kebun/Kolam
+  areaHeavy: z.number().optional(),
+  areaMedium: z.number().optional(),
+  areaLight: z.number().optional(),
   estimatedLoss: z.number(),
   notes: z.string().optional(),
 })
@@ -95,15 +106,67 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+// ── Komponen input angka sederhana ───────────────────────────
 function NumInput({ field, className }: { field: any; className?: string }) {
   return (
     <Input
       type="number"
       min={0}
-      className={`h-8 text-center text-sm ${className}`}
+      className={`h-8 text-center text-sm ${className ?? ''}`}
       {...field}
       onChange={(e) => field.onChange(Number(e.target.value))}
     />
+  )
+}
+
+// ── Komponen input desimal (hektar) ──────────────────────────
+function DecimalInput({ field, className }: { field: any; className?: string }) {
+  return (
+    <Input
+      type="number"
+      min={0}
+      step={0.01}
+      className={`h-8 text-center text-sm ${className ?? ''}`}
+      {...field}
+      onChange={(e) => field.onChange(Number(e.target.value))}
+    />
+  )
+}
+
+// ── Komponen input mata uang dengan separator ribuan ─────────
+function CurrencyInput({ field }: { field: any }) {
+  // Simpan raw number, tampilkan dengan format Rupiah
+  const [display, setDisplay] = useState(
+    field.value ? Number(field.value).toLocaleString('id-ID') : ''
+  )
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // Hapus semua non-digit
+    const raw = e.target.value.replace(/\D/g, '')
+    const num = raw ? parseInt(raw, 10) : 0
+    setDisplay(raw ? num.toLocaleString('id-ID') : '')
+    field.onChange(num)
+  }
+
+  function handleBlur() {
+    if (field.value) {
+      setDisplay(Number(field.value).toLocaleString('id-ID'))
+    }
+  }
+
+  return (
+    <div className="relative flex items-center">
+      <span className="absolute left-3 text-xs font-semibold text-slate-400 select-none">Rp</span>
+      <Input
+        type="text"
+        inputMode="numeric"
+        className="h-8 pl-8 text-sm"
+        value={display}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder="0"
+      />
+    </div>
   )
 }
 
@@ -128,7 +191,11 @@ const ASSET_TYPES = [
   'Jembatan',
   'Jalan',
   'Fasilitas Umum',
-  'Lahan/Sawah',
+  'Lahan',
+  'Sawah',
+  'Hutan',
+  'Kebun',
+  'Kolam',
   'Lainnya',
 ]
 
@@ -195,22 +262,16 @@ export function IncidentDialog({
     fields: victimFields,
     append: appendVictim,
     remove: removeVictim,
-  } = useFieldArray({
-    control: form.control,
-    name: 'victims',
-  })
+  } = useFieldArray({ control: form.control, name: 'victims' })
+
   const {
     fields: damageFields,
     append: appendDamage,
     remove: removeDamage,
-  } = useFieldArray({
-    control: form.control,
-    name: 'damages',
-  })
+  } = useFieldArray({ control: form.control, name: 'damages' })
 
   useEffect(() => {
     if (open && item) {
-      console.log('Item received: ', item)
       form.reset({
         title: item.title ?? '',
         disasterTypeId: item.disasterTypeId,
@@ -240,8 +301,6 @@ export function IncidentDialog({
   }, [open, item, form])
 
   const { isSubmitting } = form.formState
-
-  // Hitung total korban realtime
   const victims = form.watch('victims')
   const totalDead = victims
     .filter((v) => v.impactType === 'meninggal')
@@ -258,7 +317,6 @@ export function IncidentDialog({
       const res = isEdit
         ? await updateIncidentAction(item.id, values)
         : await createIncidentAction(values)
-
       if (res?.success) {
         toast.success(isEdit ? 'Kejadian diperbarui' : 'Kejadian ditambahkan')
         onSuccess({ ...values, id: item?.id ?? Date.now() })
@@ -280,7 +338,6 @@ export function IncidentDialog({
       >
         <DialogHeader className="border-b px-6 pt-6 pb-4">
           <DialogTitle>{isEdit ? 'Edit Kejadian Bencana' : 'Tambah Kejadian Bencana'}</DialogTitle>
-          {/* Summary korban realtime */}
           {(totalDead > 0 || totalMissing > 0 || totalInjured > 0) && (
             <div className="mt-2 flex gap-2">
               {totalDead > 0 && (
@@ -571,18 +628,14 @@ export function IncidentDialog({
                       form.setValue('districtId', '')
                       form.setValue('villageName', '')
                     }}
-                    onKecamatanChange={(v) => {
-                      form.setValue('districtId', v)
-                    }}
+                    onKecamatanChange={(v) => form.setValue('districtId', v)}
                     onVillageNameChange={(v) => form.setValue('villageName', v)}
                   />
-
                   {form.formState.errors.regencyId && (
                     <p className="text-destructive text-sm">
                       {form.formState.errors.regencyId.message}
                     </p>
                   )}
-
                   <FormField
                     control={form.control}
                     name="addressDetail"
@@ -596,12 +649,10 @@ export function IncidentDialog({
                       </FormItem>
                     )}
                   />
-
                   <Separator />
                   <p className="text-navy-700 text-xs font-semibold">
                     Koordinat GPS (wajib untuk peta)
                   </p>
-
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
@@ -768,29 +819,42 @@ export function IncidentDialog({
 
                 {/* ── Tab Kerugian Material ── */}
                 <TabsContent value="material" className="mt-0 space-y-3">
-                  {damageFields.map((field, index) => (
-                    <div key={field.id} className="space-y-3 rounded-xl border p-4">
-                      <div className="flex items-center justify-between">
-                        <p className="text-navy-800 text-sm font-semibold">
-                          {form.watch(`damages.${index}.assetName`) || 'Aset Baru'}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-destructive"
-                          onClick={() => removeDamage(index)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
+                  {damageFields.map((field, index) => {
+                    const assetName = form.watch(`damages.${index}.assetName`)
+                    const useArea = isAreaAsset(assetName)
+
+                    return (
+                      <div key={field.id} className="space-y-3 rounded-xl border p-4">
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <p className="text-navy-800 text-sm font-semibold">
+                              {assetName || 'Aset Baru'}
+                            </p>
+                            {useArea && (
+                              <Badge className="border-0 bg-green-100 text-[10px] text-green-700">
+                                Satuan: Hektar
+                              </Badge>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive"
+                            onClick={() => removeDamage(index)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+
+                        {/* Nama aset */}
                         <FormField
                           control={form.control}
                           name={`damages.${index}.assetName`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Nama Aset</FormLabel>
+                              <FormLabel className="text-xs">Jenis Aset</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger className="h-8 text-xs">
@@ -798,51 +862,182 @@ export function IncidentDialog({
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {ASSET_TYPES.map((a) => (
-                                    <SelectItem key={a} value={a}>
-                                      {a}
-                                    </SelectItem>
-                                  ))}
+                                  <SelectGroup>
+                                    <SelectLabel className="text-[10px]">
+                                      Bangunan / Infrastruktur
+                                    </SelectLabel>
+                                    {[
+                                      'Rumah',
+                                      'Sekolah',
+                                      'Jembatan',
+                                      'Jalan',
+                                      'Fasilitas Umum',
+                                      'Lainnya',
+                                    ].map((a) => (
+                                      <SelectItem key={a} value={a}>
+                                        {a}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                  <SelectGroup>
+                                    <SelectLabel className="text-[10px]">
+                                      Lahan (satuan Hektar)
+                                    </SelectLabel>
+                                    {['Lahan', 'Sawah', 'Hutan', 'Kebun', 'Kolam'].map((a) => (
+                                      <SelectItem key={a} value={a}>
+                                        {a}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
                                 </SelectContent>
                               </Select>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
+
+                        {/* Input unit atau hektar sesuai tipe aset */}
+                        {useArea ? (
+                          // Aset lahan — input dalam hektar
+                          <div>
+                            <p className="mb-2 text-xs font-medium text-slate-600">
+                              Luas Terdampak (Hektar)
+                            </p>
+                            <div className="grid grid-cols-3 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`damages.${index}.areaHeavy`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Rusak Berat (Ha)</FormLabel>
+                                    <DecimalInput field={field} />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`damages.${index}.areaMedium`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Rusak Sedang (Ha)</FormLabel>
+                                    <DecimalInput field={field} />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`damages.${index}.areaLight`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Rusak Ringan (Ha)</FormLabel>
+                                    <DecimalInput field={field} />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            {/* Total hektar */}
+                            <div className="mt-2 flex items-center gap-2 rounded-lg bg-green-50 px-3 py-1.5">
+                              <span className="text-xs text-green-700">Total terdampak:</span>
+                              <span className="text-sm font-bold text-green-800">
+                                {(
+                                  (form.watch(`damages.${index}.areaHeavy`) || 0) +
+                                  (form.watch(`damages.${index}.areaMedium`) || 0) +
+                                  (form.watch(`damages.${index}.areaLight`) || 0)
+                                ).toFixed(2)}{' '}
+                                Ha
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          // Aset bangunan/infrastruktur — input dalam unit
+                          <div>
+                            <p className="mb-2 text-xs font-medium text-slate-600">
+                              Jumlah Terdampak (Unit)
+                            </p>
+                            <div className="grid grid-cols-3 gap-3">
+                              {[
+                                {
+                                  name: `damages.${index}.heavyDamage` as const,
+                                  label: 'Rusak Berat',
+                                },
+                                {
+                                  name: `damages.${index}.moderateDamage` as const,
+                                  label: 'Rusak Sedang',
+                                },
+                                {
+                                  name: `damages.${index}.lightDamage` as const,
+                                  label: 'Rusak Ringan',
+                                },
+                              ].map(({ name, label }) => (
+                                <FormField
+                                  key={name}
+                                  control={form.control}
+                                  name={name}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-xs">{label}</FormLabel>
+                                      <NumInput field={field} />
+                                    </FormItem>
+                                  )}
+                                />
+                              ))}
+                            </div>
+                            {/* Total unit */}
+                            <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5">
+                              <span className="text-xs text-slate-500">Total terdampak:</span>
+                              <span className="text-sm font-bold text-slate-700">
+                                {(form.watch(`damages.${index}.heavyDamage`) || 0) +
+                                  (form.watch(`damages.${index}.moderateDamage`) || 0) +
+                                  (form.watch(`damages.${index}.lightDamage`) || 0)}{' '}
+                                unit
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Taksiran kerugian — input mata uang */}
                         <FormField
                           control={form.control}
                           name={`damages.${index}.estimatedLoss`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Taksiran Kerugian (Rp)</FormLabel>
-                              <NumInput field={field} />
+                              <FormLabel className="text-xs">Taksiran Kerugian</FormLabel>
+                              <CurrencyInput field={field} />
+                              {field.value > 0 && (
+                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                  {new Intl.NumberFormat('id-ID', {
+                                    style: 'currency',
+                                    currency: 'IDR',
+                                    maximumFractionDigits: 0,
+                                  }).format(field.value)}
+                                </p>
+                              )}
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Keterangan tambahan */}
+                        <FormField
+                          control={form.control}
+                          name={`damages.${index}.notes`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Keterangan (Opsional)</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  rows={2}
+                                  placeholder="Penjelasan tambahan mengenai kerusakan..."
+                                  className="resize-none text-xs"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { name: `damages.${index}.heavyDamage` as const, label: 'Rusak Berat' },
-                          {
-                            name: `damages.${index}.moderateDamage` as const,
-                            label: 'Rusak Sedang',
-                          },
-                          { name: `damages.${index}.lightDamage` as const, label: 'Rusak Ringan' },
-                        ].map(({ name, label }) => (
-                          <FormField
-                            key={name}
-                            control={form.control}
-                            name={name}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-xs">{label}</FormLabel>
-                                <NumInput field={field} />
-                              </FormItem>
-                            )}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   <Button
                     type="button"
@@ -855,7 +1050,11 @@ export function IncidentDialog({
                         heavyDamage: 0,
                         moderateDamage: 0,
                         lightDamage: 0,
+                        areaHeavy: 0,
+                        areaMedium: 0,
+                        areaLight: 0,
                         estimatedLoss: 0,
+                        notes: '',
                       })
                     }
                   >

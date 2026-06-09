@@ -1,13 +1,14 @@
 // src/app/admin/(dashboard)/news/_components/tiptap-editor.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
-import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
+import TextAlign from '@tiptap/extension-text-align'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { MediaPicker } from '@/app/admin/(dashboard)/media/_components/media-picker'
@@ -24,24 +25,116 @@ import {
   Undo,
   Redo,
   ImageIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+// ── Peta align label → CSS justify-content ───────────────────
+const JUSTIFY: Record<string, string> = {
+  left: 'flex-start',
+  center: 'center',
+  right: 'flex-end',
+}
+
+// ── Custom Node: ResizableImage ───────────────────────────────
+// Bukan extend TiptapImage — Node baru agar full kontrol renderHTML
+const ResizableImage = Node.create({
+  name: 'resizableImage',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: '' },
+      title: { default: null },
+      // '100%' | '75%' | '50%' | '25%'
+      width: { default: '100%' },
+      // 'left' | 'center' | 'right'
+      align: { default: 'left' },
+    }
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'div[data-type="resizable-image"]',
+        getAttrs: (el) => {
+          const div = el as HTMLElement
+          const img = div.querySelector('img')
+          return {
+            src: img?.getAttribute('src') ?? null,
+            alt: img?.getAttribute('alt') ?? '',
+            title: img?.getAttribute('title') ?? null,
+            width: img?.style.width || '100%',
+            align: div.dataset.align || 'left',
+          }
+        },
+      },
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const { src, alt, title, width, align } = HTMLAttributes
+    const justify = JUSTIFY[align as string] ?? 'flex-start'
+
+    const wrapperStyle = `display:flex; justify-content:${justify}; width:100%; margin:8px 0;`
+    const imgStyle = `width:${width ?? '100%'}; height:auto; border-radius:8px; display:block;`
+
+    return [
+      'div',
+      {
+        style: wrapperStyle,
+        'data-type': 'resizable-image',
+        'data-align': align ?? 'left',
+      },
+      ['img', mergeAttributes({ src, alt, title }, { style: imgStyle })],
+    ]
+  },
+})
+
+// ──────────────────────────────────────────────────────────────
 
 interface Props {
   value: string
   onChange: (value: string) => void
 }
 
+const IMAGE_SIZES = [
+  { label: '100%', value: '100%' },
+  { label: '75%', value: '75%' },
+  { label: '50%', value: '50%' },
+  { label: '25%', value: '25%' },
+] as const
+
+const ALIGN_OPTIONS = [
+  { value: 'left', label: 'Kiri' },
+  { value: 'center', label: 'Tengah' },
+  { value: 'right', label: 'Kanan' },
+] as const
+
+type AlignVal = 'left' | 'center' | 'right'
+type SizeVal = '100%' | '75%' | '50%' | '25%'
+
 export function TiptapEditor({ value, onChange }: Props) {
-  const [showImagePicker, setShowImagePicker] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null)
+  const [selAlign, setSelAlign] = useState<AlignVal>('left')
+  const [selSize, setSelSize] = useState<SizeVal>('100%')
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder: 'Tulis konten di sini...' }),
       CharacterCount,
-      Image.configure({ inline: false, allowBase64: false }),
+      ResizableImage,
       Link.configure({ openOnClick: false, autolink: true }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     content: value,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -53,16 +146,32 @@ export function TiptapEditor({ value, onChange }: Props) {
     immediatelyRender: false,
   })
 
-  if (!editor) return null
-
-  function handleInsertImage(url: string) {
+  function handleImageSelected(url: string) {
     if (!url) return
-    editor?.chain().focus().setImage({ src: url }).run()
-    setShowImagePicker(false)
+    setPendingUrl(url)
+    setSelAlign('left')
+    setSelSize('100%')
+    setShowPicker(false)
   }
 
+  // Sisipkan node ResizableImage ke editor
+  const doInsert = useCallback(() => {
+    if (!editor || !pendingUrl) return
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'resizableImage',
+        attrs: { src: pendingUrl, width: selSize, align: selAlign },
+      })
+      .run()
+    setPendingUrl(null)
+  }, [editor, pendingUrl, selSize, selAlign])
+
+  if (!editor) return null
+
   type ToolItem = {
-    icon: React.FC<any>
+    icon: React.FC<{ className?: string }>
     action: () => void
     active?: boolean
     disabled?: boolean
@@ -129,6 +238,35 @@ export function TiptapEditor({ value, onChange }: Props) {
       ],
     },
     {
+      group: 'align',
+      items: [
+        {
+          icon: AlignLeft,
+          action: () => editor.chain().focus().setTextAlign('left').run(),
+          active: editor.isActive({ textAlign: 'left' }),
+          title: 'Rata Kiri',
+        },
+        {
+          icon: AlignCenter,
+          action: () => editor.chain().focus().setTextAlign('center').run(),
+          active: editor.isActive({ textAlign: 'center' }),
+          title: 'Rata Tengah',
+        },
+        {
+          icon: AlignRight,
+          action: () => editor.chain().focus().setTextAlign('right').run(),
+          active: editor.isActive({ textAlign: 'right' }),
+          title: 'Rata Kanan',
+        },
+        {
+          icon: AlignJustify,
+          action: () => editor.chain().focus().setTextAlign('justify').run(),
+          active: editor.isActive({ textAlign: 'justify' }),
+          title: 'Rata Kanan-Kiri',
+        },
+      ],
+    },
+    {
       group: 'list',
       items: [
         {
@@ -148,16 +286,6 @@ export function TiptapEditor({ value, onChange }: Props) {
           action: () => editor.chain().focus().toggleBlockquote().run(),
           active: editor.isActive('blockquote'),
           title: 'Blockquote',
-        },
-      ],
-    },
-    {
-      group: 'media',
-      items: [
-        {
-          icon: ImageIcon,
-          action: () => setShowImagePicker(true),
-          title: 'Insert Gambar',
         },
       ],
     },
@@ -186,9 +314,19 @@ export function TiptapEditor({ value, onChange }: Props) {
             ))}
           </div>
         ))}
+        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          title="Insert Gambar"
+          onClick={() => setShowPicker(true)}
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+        </Button>
       </div>
 
-      {/* Editor area */}
+      {/* Area editor */}
       <EditorContent editor={editor} className="bg-background" />
 
       {/* Character count */}
@@ -199,14 +337,119 @@ export function TiptapEditor({ value, onChange }: Props) {
         </span>
       </div>
 
-      {/* Media picker modal untuk insert gambar */}
+      {/* Media picker */}
       <MediaPicker
-        open={showImagePicker}
-        onOpenChange={setShowImagePicker}
+        open={showPicker}
+        onOpenChange={setShowPicker}
         value=""
-        onChange={handleInsertImage}
+        onChange={handleImageSelected}
         imageOnly
       />
+
+      {/* ── Modal konfigurasi gambar ── */}
+      {pendingUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setPendingUrl(null)}
+        >
+          <div
+            className="w-80 overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="border-b border-slate-100 bg-slate-50 px-5 py-3">
+              <p className="text-navy-800 text-sm font-semibold">Pengaturan Gambar</p>
+            </div>
+
+            <div className="space-y-5 p-5">
+              {/* Preview live */}
+              <div
+                className="flex min-h-[80px] overflow-hidden rounded-xl bg-slate-100 p-2"
+                style={{ justifyContent: JUSTIFY[selAlign] }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pendingUrl}
+                  alt="preview"
+                  style={{
+                    width: selSize,
+                    height: 'auto',
+                    maxHeight: 120,
+                    borderRadius: 6,
+                    display: 'block',
+                  }}
+                />
+              </div>
+
+              {/* Posisi */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+                  Posisi
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {ALIGN_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setSelAlign(value)}
+                      className={cn(
+                        'rounded-xl border py-2.5 text-xs font-semibold transition',
+                        selAlign === value
+                          ? 'border-orange-400 bg-orange-50 text-orange-700'
+                          : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ukuran */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+                  Ukuran
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {IMAGE_SIZES.map(({ label, value }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setSelSize(value)}
+                      className={cn(
+                        'rounded-xl border py-2.5 text-xs font-semibold transition',
+                        selSize === value
+                          ? 'border-orange-400 bg-orange-50 text-orange-700'
+                          : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingUrl(null)}
+                  className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={doInsert}
+                  className="flex-1 rounded-xl bg-orange-500 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
+                >
+                  Sisipkan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

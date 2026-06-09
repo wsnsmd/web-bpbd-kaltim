@@ -15,35 +15,26 @@ import {
 import { sql, relations } from 'drizzle-orm'
 import { users } from './users'
 
-// ─────────────────────────────────────────────────────────────
-// 1. MASTER JENIS BENCANA (dinamis — bisa tambah/kurang di DB)
-// ─────────────────────────────────────────────────────────────
 export const disasterTypes = mysqlTable('disaster_types', {
   id: int('id').primaryKey().autoincrement(),
-  name: varchar('name', { length: 100 }).notNull(), // "Banjir", "Kebakaran"
+  name: varchar('name', { length: 100 }).notNull(),
   category: mysqlEnum('category', ['alam', 'non_alam']).notNull().default('alam'),
-  icon: varchar('icon', { length: 10 }).default('⚠️'), // emoji
-  color: varchar('color', { length: 7 }).default('#6b7592'), // hex
+  icon: varchar('icon', { length: 10 }).default('⚠️'),
+  color: varchar('color', { length: 7 }).default('#6b7592'),
   isActive: boolean('is_active').default(true),
   sortOrder: int('sort_order').default(0),
 })
 
-// ─────────────────────────────────────────────────────────────
-// 2. MASTER PENYEBAB (dinamis)
-// ─────────────────────────────────────────────────────────────
 export const disasterCauses = mysqlTable('disaster_causes', {
   id: int('id').primaryKey().autoincrement(),
   name: varchar('name', { length: 100 }).notNull(),
   isActive: boolean('is_active').default(true),
 })
 
-// ─────────────────────────────────────────────────────────────
-// 3. MASTER WILAYAH (hierarki Prov → Kab/Kota → Kecamatan)
-// ─────────────────────────────────────────────────────────────
 export const regions = mysqlTable(
   'regions',
   {
-    id: varchar('id', { length: 10 }).primaryKey(), // kode BPS: 64, 6471, 647107, 64710701
+    id: varchar('id', { length: 10 }).primaryKey(),
     name: varchar('name', { length: 100 }).notNull(),
     level: mysqlEnum('level', ['provinsi', 'kabkota', 'kecamatan', 'kelurahan']).notNull(),
     parentId: varchar('parent_id', { length: 10 }),
@@ -54,48 +45,33 @@ export const regions = mysqlTable(
   })
 )
 
-// ─────────────────────────────────────────────────────────────
-// 4. TABEL UTAMA KEJADIAN BENCANA
-// ─────────────────────────────────────────────────────────────
 export const incidents = mysqlTable(
   'incidents',
   {
     id: int('id').primaryKey().autoincrement(),
-
-    // Identitas
     title: varchar('title', { length: 255 }).notNull(),
     disasterTypeId: int('disaster_type_id').references(() => disasterTypes.id, {
       onDelete: 'set null',
     }),
     causeId: int('cause_id').references(() => disasterCauses.id, { onDelete: 'set null' }),
-    causeDetail: varchar('cause_detail', { length: 255 }), // detail bebas jika "lainnya"
-    description: text('description'), // kronologis
-    source: varchar('source', { length: 255 }), // BPBD/BMKG/Disdamkar
-
-    // Waktu
+    causeDetail: varchar('cause_detail', { length: 255 }),
+    description: text('description'),
+    source: varchar('source', { length: 255 }),
     occurredDate: date('occurred_date').notNull(),
     occurredTime: time('occurred_time'),
-
-    // Lokasi administratif (FK ke regions)
     provinceId: varchar('province_id', { length: 10 }).default('64'),
     regencyId: varchar('regency_id', { length: 10 }),
     districtId: varchar('district_id', { length: 10 }),
     villageId: varchar('village_id', { length: 10 }).references(() => regions.id, {
       onDelete: 'set null',
     }),
-    villageName: varchar('village_name', { length: 100 }), // desa/kelurahan (teks bebas)
-    addressDetail: varchar('address_detail', { length: 500 }), // alamat rinci
-
-    // Koordinat GPS — WAJIB untuk peta
+    villageName: varchar('village_name', { length: 100 }),
+    addressDetail: varchar('address_detail', { length: 500 }),
     latitude: decimal('latitude', { precision: 10, scale: 7 }).notNull(),
     longitude: decimal('longitude', { precision: 10, scale: 7 }).notNull(),
-
-    // Status & kondisi terkini
     status: mysqlEnum('status', ['aktif', 'ditangani', 'selesai']).default('aktif'),
-    currentCondition: varchar('current_condition', { length: 255 }), // kondisi mutakhir
-    currentEffort: text('current_effort'), // upaya terkini
-
-    // Publikasi
+    currentCondition: varchar('current_condition', { length: 255 }),
+    currentEffort: text('current_effort'),
     isPublished: boolean('is_published').default(true),
     reportedBy: varchar('reported_by', { length: 36 }).references(() => users.id, {
       onDelete: 'set null',
@@ -112,9 +88,6 @@ export const incidents = mysqlTable(
   })
 )
 
-// ─────────────────────────────────────────────────────────────
-// 5. TABEL KORBAN (normalisasi per kategori dampak × usia × gender)
-// ─────────────────────────────────────────────────────────────
 export const incidentVictims = mysqlTable(
   'incident_victims',
   {
@@ -134,16 +107,14 @@ export const incidentVictims = mysqlTable(
     ),
     countMale: int('count_male').default(0),
     countFemale: int('count_female').default(0),
-    countTotal: int('count_total').default(0), // auto = male + female
+    countTotal: int('count_total').default(0),
     notes: varchar('notes', { length: 255 }),
   },
-  (t) => ({
-    incidentIdx: index('victims_incident_idx').on(t.incidentId),
-  })
+  (t) => ({ incidentIdx: index('victims_incident_idx').on(t.incidentId) })
 )
 
 // ─────────────────────────────────────────────────────────────
-// 6. TABEL KERUGIAN MATERIAL
+// TABEL KERUGIAN MATERIAL — versi baru dengan kolom luas area
 // ─────────────────────────────────────────────────────────────
 export const incidentDamages = mysqlTable(
   'incident_damages',
@@ -152,21 +123,28 @@ export const incidentDamages = mysqlTable(
     incidentId: int('incident_id')
       .notNull()
       .references(() => incidents.id, { onDelete: 'cascade' }),
-    assetName: varchar('asset_name', { length: 100 }).notNull(), // Rumah, Jembatan, Sekolah
-    heavyDamage: int('heavy_damage').default(0), // Rusak Berat
-    moderateDamage: int('moderate_damage').default(0), // Rusak Sedang
-    lightDamage: int('light_damage').default(0), // Rusak Ringan
-    estimatedLoss: decimal('estimated_loss', { precision: 15, scale: 2 }).default('0'), // Taksiran kerugian Rp
-    notes: varchar('notes', { length: 255 }),
+    assetName: varchar('asset_name', { length: 100 }).notNull(),
+
+    // ── Kolom unit (bangunan/infrastruktur) ───────────────────
+    heavyDamage: int('heavy_damage').default(0),
+    moderateDamage: int('moderate_damage').default(0),
+    lightDamage: int('light_damage').default(0),
+
+    // ── Kolom luas area dalam Hektar (Lahan/Sawah/Hutan/Kebun/Kolam) ──
+    // NULL = aset ini tidak menggunakan satuan luas
+    areaHeavy: decimal('area_heavy', { precision: 10, scale: 2 }).default('0'),
+    areaMedium: decimal('area_medium', { precision: 10, scale: 2 }).default('0'),
+    areaLight: decimal('area_light', { precision: 10, scale: 2 }).default('0'),
+
+    // ── Finansial ─────────────────────────────────────────────
+    estimatedLoss: decimal('estimated_loss', { precision: 15, scale: 2 }).default('0'),
+
+    // ── Keterangan tambahan (diperbesar jadi text) ────────────
+    notes: text('notes'),
   },
-  (t) => ({
-    incidentIdx: index('damages_incident_idx').on(t.incidentId),
-  })
+  (t) => ({ incidentIdx: index('damages_incident_idx').on(t.incidentId) })
 )
 
-// ─────────────────────────────────────────────────────────────
-// 7. TABEL TIMELINE / HISTORY PENANGANAN
-// ─────────────────────────────────────────────────────────────
 export const incidentTimelines = mysqlTable(
   'incident_timelines',
   {
@@ -178,17 +156,17 @@ export const incidentTimelines = mysqlTable(
       .notNull()
       .default(sql`NOW()`),
     eventType: mysqlEnum('event_type', [
-      'laporan_awal', // Laporan pertama masuk
-      'verifikasi', // Data diverifikasi
-      'pengerahan', // Tim/sumber daya dikerahkan
-      'penanganan', // Update penanganan
-      'kondisi_update', // Update kondisi lapangan
-      'korban_update', // Update data korban
-      'selesai', // Dinyatakan selesai
-      'catatan', // Catatan umum
+      'laporan_awal',
+      'verifikasi',
+      'pengerahan',
+      'penanganan',
+      'kondisi_update',
+      'korban_update',
+      'selesai',
+      'catatan',
     ]).default('catatan'),
-    title: varchar('title', { length: 255 }).notNull(), // Ringkasan event
-    description: text('description'), // Detail narasi
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
     statusBefore: mysqlEnum('status_before', ['aktif', 'ditangani', 'selesai']),
     statusAfter: mysqlEnum('status_after', ['aktif', 'ditangani', 'selesai']),
     createdBy: varchar('created_by', { length: 36 }).references(() => users.id, {
@@ -202,9 +180,7 @@ export const incidentTimelines = mysqlTable(
   })
 )
 
-// ─────────────────────────────────────────────────────────────
-// RELATIONS
-// ─────────────────────────────────────────────────────────────
+// ── Relations ─────────────────────────────────────────────────
 export const incidentsRelations = relations(incidents, ({ one, many }) => ({
   disasterType: one(disasterTypes, {
     fields: [incidents.disasterTypeId],
@@ -241,9 +217,7 @@ export const regionsRelations = relations(regions, ({ one, many }) => ({
   children: many(regions),
 }))
 
-// ─────────────────────────────────────────────────────────────
-// SEED DATA — Jenis Bencana default (jalankan sekali)
-// ─────────────────────────────────────────────────────────────
+// ── Seed data (tidak berubah) ──────────────────────────────────
 export const DEFAULT_DISASTER_TYPES = [
   { name: 'Banjir', category: 'alam' as const, icon: '🌊', color: '#2e72c9', sortOrder: 1 },
   { name: 'Tanah Longsor', category: 'alam' as const, icon: '⛰️', color: '#8b5e3c', sortOrder: 2 },
