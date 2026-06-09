@@ -185,19 +185,19 @@ const AGE_GROUPS = [
   { value: 'tidak_diketahui', label: 'Tidak Diketahui' },
 ] as const
 
-const ASSET_TYPES = [
-  'Rumah',
-  'Sekolah',
-  'Jembatan',
-  'Jalan',
-  'Fasilitas Umum',
-  'Lahan',
-  'Sawah',
-  'Hutan',
-  'Kebun',
-  'Kolam',
-  'Lainnya',
-]
+// const ASSET_TYPES = [
+//   'Rumah',
+//   'Sekolah',
+//   'Jembatan',
+//   'Jalan',
+//   'Fasilitas Umum',
+//   'Lahan',
+//   'Sawah',
+//   'Hutan',
+//   'Kebun',
+//   'Kolam',
+//   'Lainnya',
+// ]
 
 const CONDITIONS = [
   'Sudah Padam',

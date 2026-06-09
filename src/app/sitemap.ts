@@ -1,7 +1,7 @@
 // src/app/sitemap.ts
 import { MetadataRoute } from 'next'
 import { db } from '@/lib/db'
-import { news, downloads } from '@db/schema'
+import { news } from '@db/schema'
 import { eq, desc } from 'drizzle-orm'
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bpbd.kaltimprov.go.id'
@@ -66,11 +66,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Unduhan aktif ────────────────────────────────────────────
   let downloadRoutes: MetadataRoute.Sitemap = []
   try {
-    const dlItems = await db
-      .select({ id: downloads.id, updatedAt: downloads.updatedAt })
-      .from(downloads)
-      .where(eq(downloads.isActive, true))
-      .limit(100)
+    // const dlItems = await db
+    //   .select({ id: downloads.id, updatedAt: downloads.updatedAt })
+    //   .from(downloads)
+    //   .where(eq(downloads.isActive, true))
+    //   .limit(100)
 
     // Unduhan tidak punya halaman detail sendiri,
     // cukup include halaman unduhan utama sudah di static routes
