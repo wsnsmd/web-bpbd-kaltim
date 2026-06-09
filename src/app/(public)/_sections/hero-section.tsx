@@ -227,7 +227,7 @@ export async function HeroSection() {
         </svg>
 
         {/* Info card melayang — kejadian aktif */}
-        <div
+        {/*<div
           className="absolute top-[20%] right-[12%]"
           style={{
             animation: 'floatCard 4s ease-in-out infinite, dotAppear 0.8s 1s ease both',
@@ -247,7 +247,7 @@ export async function HeroSection() {
               <span className="text-[10px] text-white/50">Sedang ditangani</span>
             </div>
           </div>
-        </div>
+        </div>*/}
 
         {/* Shield icon besar — melambangkan perlindungan */}
         <svg
