@@ -71,6 +71,13 @@
       "when": 1780821359027,
       "tag": "0009_broad_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1781162323727,
+      "tag": "0010_ambiguous_lightspeed",
+      "breakpoints": true
     }
   ]
 }

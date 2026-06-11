@@ -1,4 +1,4 @@
-// database/schema/incidents.ts
+// database/schema/incidents.ts — lengkap dengan tabel photos
 import {
   mysqlTable,
   varchar,
@@ -113,9 +113,6 @@ export const incidentVictims = mysqlTable(
   (t) => ({ incidentIdx: index('victims_incident_idx').on(t.incidentId) })
 )
 
-// ─────────────────────────────────────────────────────────────
-// TABEL KERUGIAN MATERIAL — versi baru dengan kolom luas area
-// ─────────────────────────────────────────────────────────────
 export const incidentDamages = mysqlTable(
   'incident_damages',
   {
@@ -124,22 +121,13 @@ export const incidentDamages = mysqlTable(
       .notNull()
       .references(() => incidents.id, { onDelete: 'cascade' }),
     assetName: varchar('asset_name', { length: 100 }).notNull(),
-
-    // ── Kolom unit (bangunan/infrastruktur) ───────────────────
     heavyDamage: int('heavy_damage').default(0),
     moderateDamage: int('moderate_damage').default(0),
     lightDamage: int('light_damage').default(0),
-
-    // ── Kolom luas area dalam Hektar (Lahan/Sawah/Hutan/Kebun/Kolam) ──
-    // NULL = aset ini tidak menggunakan satuan luas
     areaHeavy: decimal('area_heavy', { precision: 10, scale: 2 }).default('0'),
     areaMedium: decimal('area_medium', { precision: 10, scale: 2 }).default('0'),
     areaLight: decimal('area_light', { precision: 10, scale: 2 }).default('0'),
-
-    // ── Finansial ─────────────────────────────────────────────
     estimatedLoss: decimal('estimated_loss', { precision: 15, scale: 2 }).default('0'),
-
-    // ── Keterangan tambahan (diperbesar jadi text) ────────────
     notes: text('notes'),
   },
   (t) => ({ incidentIdx: index('damages_incident_idx').on(t.incidentId) })
@@ -180,6 +168,25 @@ export const incidentTimelines = mysqlTable(
   })
 )
 
+// ── TABEL FOTO KEJADIAN ────────────────────────────────────────
+export const incidentPhotos = mysqlTable(
+  'incident_photos',
+  {
+    id: int('id').primaryKey().autoincrement(),
+    incidentId: int('incident_id')
+      .notNull()
+      .references(() => incidents.id, { onDelete: 'cascade' }),
+    url: varchar('url', { length: 500 }).notNull(),
+    caption: varchar('caption', { length: 255 }),
+    sortOrder: int('sort_order').default(0),
+    uploadedBy: varchar('uploaded_by', { length: 36 }).references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: datetime('created_at').default(sql`NOW()`),
+  },
+  (t) => ({ incidentIdx: index('photos_incident_idx').on(t.incidentId) })
+)
+
 // ── Relations ─────────────────────────────────────────────────
 export const incidentsRelations = relations(incidents, ({ one, many }) => ({
   disasterType: one(disasterTypes, {
@@ -193,31 +200,31 @@ export const incidentsRelations = relations(incidents, ({ one, many }) => ({
   victims: many(incidentVictims),
   damages: many(incidentDamages),
   timelines: many(incidentTimelines),
+  photos: many(incidentPhotos),
 }))
 
 export const incidentVictimsRelations = relations(incidentVictims, ({ one }) => ({
   incident: one(incidents, { fields: [incidentVictims.incidentId], references: [incidents.id] }),
 }))
-
 export const incidentDamagesRelations = relations(incidentDamages, ({ one }) => ({
   incident: one(incidents, { fields: [incidentDamages.incidentId], references: [incidents.id] }),
 }))
-
 export const incidentTimelinesRelations = relations(incidentTimelines, ({ one }) => ({
   incident: one(incidents, { fields: [incidentTimelines.incidentId], references: [incidents.id] }),
   creator: one(users, { fields: [incidentTimelines.createdBy], references: [users.id] }),
 }))
-
+export const incidentPhotosRelations = relations(incidentPhotos, ({ one }) => ({
+  incident: one(incidents, { fields: [incidentPhotos.incidentId], references: [incidents.id] }),
+  uploader: one(users, { fields: [incidentPhotos.uploadedBy], references: [users.id] }),
+}))
 export const disasterTypesRelations = relations(disasterTypes, ({ many }) => ({
   incidents: many(incidents),
 }))
-
 export const regionsRelations = relations(regions, ({ one, many }) => ({
   parent: one(regions, { fields: [regions.parentId], references: [regions.id] }),
   children: many(regions),
 }))
 
-// ── Seed data (tidak berubah) ──────────────────────────────────
 export const DEFAULT_DISASTER_TYPES = [
   { name: 'Banjir', category: 'alam' as const, icon: '🌊', color: '#2e72c9', sortOrder: 1 },
   { name: 'Tanah Longsor', category: 'alam' as const, icon: '⛰️', color: '#8b5e3c', sortOrder: 2 },
@@ -235,7 +242,6 @@ export const DEFAULT_DISASTER_TYPES = [
   { name: 'Kebakaran', category: 'non_alam' as const, icon: '🔥', color: '#e85000', sortOrder: 8 },
   { name: 'Lain-Lain', category: 'non_alam' as const, icon: '⚠️', color: '#6b7592', sortOrder: 9 },
 ]
-
 export const DEFAULT_DISASTER_CAUSES = [
   { name: 'Hujan Sedang - Lebat' },
   { name: 'Hujan Sedang - Lebat & Angin Kencang' },
@@ -251,7 +257,6 @@ export const DEFAULT_DISASTER_CAUSES = [
   { name: 'Dalam Penyelidikan' },
   { name: 'Lainnya' },
 ]
-
 export const DEFAULT_KABKOTA_KALTIM = [
   { id: '6401', name: 'Paser', level: 'kabkota' as const, parentId: '64' },
   { id: '6402', name: 'Kutai Barat', level: 'kabkota' as const, parentId: '64' },

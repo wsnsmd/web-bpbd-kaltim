@@ -1,15 +1,28 @@
 // src/app/(public)/peta-bencana/_components/peta-bencana-client.tsx
-// src/app/(public)/peta-bencana/_components/peta-bencana-client.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapPin, X, AlertTriangle, List, Map as MapIcon, Phone } from 'lucide-react'
+import {
+  MapPin,
+  X,
+  AlertTriangle,
+  List,
+  Map as MapIcon,
+  Phone,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────
+interface Photo {
+  id: number
+  url: string
+  caption: string
+}
 interface Victim {
   id: number
   incidentId: number
@@ -50,6 +63,7 @@ interface Incident {
   updatedAt: string | null
   victims: Victim[]
   damages: Damage[]
+  photos: Photo[] // ← tambah
 }
 
 interface Props {
@@ -65,7 +79,6 @@ const STATUS = {
   aktif: { label: 'Aktif', color: '#e85000', bg: '#fef2f2', text: '#b91c1c', pulse: true },
   ditangani: { label: 'Ditangani', color: '#c98b00', bg: '#fffbeb', text: '#92400e', pulse: false },
 }
-
 const IMPACT_LABEL: Record<string, string> = {
   meninggal: 'Meninggal',
   hilang: 'Hilang',
@@ -106,6 +119,154 @@ function victimSum(victims: Victim[], type: string) {
     .reduce((s, v) => s + (v.countTotal ?? (v.countMale ?? 0) + (v.countFemale ?? 0)), 0)
 }
 
+// ── Photo Gallery komponen ─────────────────────────────────────
+function PhotoGallery({ photos }: { photos: Photo[] }) {
+  const [current, setCurrent] = useState(0)
+  const [lightbox, setLightbox] = useState(false)
+
+  if (photos.length === 0) return null
+
+  const prev = () => setCurrent((i) => (i - 1 + photos.length) % photos.length)
+  const next = () => setCurrent((i) => (i + 1) % photos.length)
+
+  return (
+    <div className="px-5 py-4">
+      <p className="mb-3 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+        📷 Dokumentasi Foto ({photos.length})
+      </p>
+
+      {/* Main photo */}
+      <div
+        className="relative overflow-hidden rounded-lg bg-slate-100"
+        style={{ aspectRatio: '16/9' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={photos[current].url}
+          alt={photos[current].caption || `Foto ${current + 1}`}
+          className="h-full w-full cursor-pointer object-cover transition hover:opacity-95"
+          onClick={() => setLightbox(true)}
+        />
+
+        {/* Nav arrows — tampil jika > 1 foto */}
+        {photos.length > 1 && (
+          <>
+            <button
+              onClick={prev}
+              className="absolute top-1/2 left-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={next}
+              className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+
+            {/* Dot indicators */}
+            <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
+              {photos.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrent(i)}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    i === current ? 'w-4 bg-white' : 'w-1.5 bg-white/50'
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Counter badge */}
+        <div className="absolute top-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold text-white">
+          {current + 1}/{photos.length}
+        </div>
+      </div>
+
+      {/* Caption */}
+      {photos[current].caption && (
+        <p className="mt-2 text-[11px] leading-relaxed text-slate-500 italic">
+          {photos[current].caption}
+        </p>
+      )}
+
+      {/* Thumbnail strip — tampil jika > 1 */}
+      {photos.length > 1 && (
+        <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+          {photos.map((p, i) => (
+            <button
+              key={p.id}
+              onClick={() => setCurrent(i)}
+              className={cn(
+                'relative h-12 w-16 shrink-0 overflow-hidden rounded-lg transition',
+                i === current
+                  ? 'ring-2 ring-orange-500 ring-offset-1'
+                  : 'opacity-60 hover:opacity-100'
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.url} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setLightbox(false)}
+        >
+          <button
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {photos.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  prev()
+                }}
+                className="absolute top-1/2 left-4 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  next()
+                }}
+                className="absolute top-1/2 right-4 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photos[current].url}
+            alt={photos[current].caption || `Foto ${current + 1}`}
+            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {photos[current].caption && (
+            <div className="absolute bottom-8 left-1/2 max-w-md -translate-x-1/2 rounded-lg bg-black/60 px-4 py-2 text-center text-sm text-white backdrop-blur-sm">
+              {photos[current].caption}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────
 export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year }: Props) {
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -116,23 +277,18 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
   const [filterStatus, setFilterStatus] = useState<string>('all')
 
   const filtered = incidents.filter((i) => filterStatus === 'all' || i.status === filterStatus)
-
   const stats = {
     total: incidents.length,
     aktif: incidents.filter((i) => i.status === 'aktif').length,
     ditangani: incidents.filter((i) => i.status === 'ditangani').length,
   }
 
-  // ── Fungsi addCustomMarker dipindahkan ke atas sebelum digunakan ──
   function addCustomMarker(map: mapboxgl.Map, incident: Incident) {
     const st = STATUS[incident.status as keyof typeof STATUS] ?? STATUS.aktif
-
-    // Wrapper luar
     const el = document.createElement('div')
     el.dataset.id = String(incident.id)
-    el.style.display = 'none' // Default DIBUAT SEMBUNYI hingga diverifikasi unclustered
+    el.style.display = 'none'
 
-    // Wrapper dalam untuk styling visual dan animasi scaling
     const innerEl = document.createElement('div')
     innerEl.id = `marker-inner-${incident.id}`
     innerEl.style.cssText = `
@@ -163,21 +319,17 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
     }
 
     el.appendChild(innerEl)
-
     el.addEventListener('click', () => {
       const found = incidents.find((i) => i.id === incident.id)
       if (found) setSelected(found)
     })
 
-    // Tambahkan anchor: 'center' secara presisi
     const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
       .setLngLat([incident.longitude, incident.latitude])
       .addTo(map)
-
     markersRef.current.set(incident.id, marker)
   }
 
-  // ── Init Mapbox dengan Clustering ─────────────────────────
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !token) return
 
@@ -192,11 +344,9 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
     mapRef.current = map
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
 
-    // Simpan currentMarkers untuk cleanup
     const currentMarkers = markersRef.current
 
     map.on('load', () => {
-      // ── GeoJSON source dengan clustering ──
       const geojson: GeoJSON.FeatureCollection = {
         type: 'FeatureCollection',
         features: incidents.map((i) => ({
@@ -220,7 +370,6 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
         clusterRadius: 50,
       })
 
-      // Cluster circle layer
       map.addLayer({
         id: 'clusters',
         type: 'circle',
@@ -235,7 +384,6 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
         },
       })
 
-      // Cluster count label layer
       map.addLayer({
         id: 'cluster-count',
         type: 'symbol',
@@ -249,51 +397,31 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
         paint: { 'text-color': '#ffffff' },
       })
 
-      // Layer invisible untuk mendeteksi marker tak ter-cluster
       map.addLayer({
         id: 'unclustered-point',
         type: 'circle',
         source: 'incidents',
         filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-radius': 0,
-          'circle-opacity': 0,
-        },
+        paint: { 'circle-radius': 0, 'circle-opacity': 0 },
       })
 
-      // Individual marker — buat HTML element untuk semua (default tersembunyi)
-      incidents.forEach((incident) => {
-        if (!map.getSource('incidents')) return
-        addCustomMarker(map, incident)
-      })
+      incidents.forEach((incident) => addCustomMarker(map, incident))
 
-      // Sinkronisasi Tampilan Marker vs Cluster saat dirender
       map.on('render', () => {
         if (!map.isStyleLoaded() || !map.getSource('incidents')) return
-
-        // 1. Sembunyikan SEMUA custom HTML marker setiap frame digerakkan
         currentMarkers.forEach((marker) => {
           marker.getElement().style.display = 'none'
         })
-
-        // 2. Tanya Mapbox: Feature apa saja yang sedang tampil tanpa cluster
-        const unclusteredFeatures = map.queryRenderedFeatures({
-          layers: ['unclustered-point'],
-        })
-
-        // 3. Tampilkan hanya marker-marker yang terdeteksi berdiri sendiri
+        const unclusteredFeatures = map.queryRenderedFeatures({ layers: ['unclustered-point'] })
         unclusteredFeatures.forEach((feature) => {
           const id = feature.properties?.id
           if (id !== undefined) {
             const marker = currentMarkers.get(Number(id))
-            if (marker) {
-              marker.getElement().style.display = 'block'
-            }
+            if (marker) marker.getElement().style.display = 'block'
           }
         })
       })
 
-      // Klik cluster → zoom in
       map.on('click', 'clusters', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] })
         const clusterId = features[0].properties?.cluster_id
@@ -324,7 +452,6 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, centerLat, centerLng, incidents])
 
-  // Fly to + highlight saat selected
   useEffect(() => {
     if (!selected || !mapRef.current) return
     mapRef.current.flyTo({
@@ -332,23 +459,17 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
       zoom: 13,
       duration: 800,
     })
-
     markersRef.current.forEach((m, id) => {
       const el = m.getElement()
       el.style.zIndex = id === selected.id ? '10' : '1'
-
-      // Target elemen DIV bagian dalam (inner)
       const inner = el.querySelector(`#marker-inner-${id}`) as HTMLDivElement
-      if (inner) {
-        inner.style.transform = id === selected.id ? 'scale(1.35)' : 'scale(1)'
-      }
+      if (inner) inner.style.transform = id === selected.id ? 'scale(1.35)' : 'scale(1)'
     })
   }, [selected])
 
   return (
-    // ... rest of the component (sama seperti sebelumnya)
     <div className="flex h-screen flex-col overflow-hidden">
-      {/* ── Top bar ── */}
+      {/* Top bar */}
       <div className="bg-navy-900 border-navy-800 z-10 flex shrink-0 items-center gap-3 border-b px-4 py-2.5">
         <Link
           href="/"
@@ -362,8 +483,6 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
           <span className="text-sm font-bold text-white">Peta Kejadian Bencana</span>
           <span className="text-navy-400 text-xs">Tahun {year}</span>
         </div>
-
-        {/* Stats */}
         <div className="ml-auto hidden items-center gap-2 md:flex">
           {[
             { label: 'Aktif', val: stats.aktif, color: 'text-red-400', bg: 'bg-red-900/30' },
@@ -384,8 +503,6 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
             </div>
           ))}
         </div>
-
-        {/* Mobile toggle */}
         <div className="border-navy-700 ml-auto flex overflow-hidden rounded-lg border md:hidden">
           {(['map', 'list'] as const).map((t) => (
             <button
@@ -410,9 +527,9 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
         </div>
       </div>
 
-      {/* ── Layout ── */}
+      {/* Layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar kiri - sama seperti sebelumnya */}
+        {/* Sidebar list */}
         <div
           className={cn(
             'flex w-80 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white',
@@ -496,9 +613,16 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
                             .filter(Boolean)
                             .join(', ') || '—'}
                         </p>
-                        <p className="mt-0.5 text-[10px] text-slate-400">
-                          {fmtShort(incident.occurredDate)}
-                        </p>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <p className="text-[10px] text-slate-400">
+                            {fmtShort(incident.occurredDate)}
+                          </p>
+                          {incident.photos.length > 0 && (
+                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">
+                              📷 {incident.photos.length}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -520,18 +644,13 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
               <div>
                 <MapPin className="mx-auto mb-3 h-12 w-12 text-slate-300" />
                 <p className="font-medium text-slate-500">Peta tidak tersedia</p>
-                <p className="mt-1 text-sm text-slate-400">
-                  Mapbox token belum dikonfigurasi.
-                  <br />
-                  Admin → Pengaturan → Kontak & Sosial
-                </p>
+                <p className="mt-1 text-sm text-slate-400">Mapbox token belum dikonfigurasi.</p>
               </div>
             </div>
           ) : (
             <div ref={containerRef} className="h-full w-full" />
           )}
 
-          {/* Darurat badge */}
           <a
             href="tel:112"
             className="absolute bottom-6 left-4 z-10 flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-white shadow-lg transition hover:bg-red-700"
@@ -543,7 +662,6 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
             </div>
           </a>
 
-          {/* Legend */}
           <div className="absolute right-4 bottom-6 z-10 space-y-1.5 rounded-xl bg-white p-3 text-xs shadow-lg">
             <p className="mb-2 text-[10px] font-bold tracking-wider text-slate-600 uppercase">
               Status
@@ -554,21 +672,10 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
                 <span className="text-slate-600">{s.label}</span>
               </div>
             ))}
-            <div className="mt-1.5 border-t border-slate-100 pt-1.5">
-              <p className="mb-1 text-[10px] font-bold tracking-wider text-slate-600 uppercase">
-                Cluster
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="bg-navy-600 flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white">
-                  N
-                </span>
-                <span className="text-slate-500">Beberapa kejadian</span>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Panel detail kanan */}
+        {/* Panel detail */}
         {selected && (
           <div
             className={cn(
@@ -576,6 +683,7 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
               'fixed inset-y-0 right-0 z-20 shadow-2xl md:relative md:z-auto md:shadow-none'
             )}
           >
+            {/* Header */}
             <div className="bg-navy-800 shrink-0 px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
@@ -635,25 +743,8 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
                 </div>
               </div>
 
-              {/* Daerah terdampak */}
-              <div className="px-5 py-4">
-                <p className="mb-2 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-                  🏘️ Daerah Terdampak
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'Desa/Kel', val: selected.villageName ?? '—' },
-                    { label: 'Kecamatan', val: selected.districtName ?? '—' },
-                    { label: 'Kab/Kota', val: selected.regencyName ?? '—' },
-                    { label: 'Provinsi', val: 'Kalimantan Timur' },
-                  ].map(({ label, val }) => (
-                    <div key={label} className="rounded-lg bg-slate-50 px-3 py-2">
-                      <p className="text-[10px] text-slate-400">{label}</p>
-                      <p className="text-navy-800 truncate text-xs font-semibold">{val}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* ── FOTO DOKUMENTASI ── */}
+              {selected.photos.length > 0 && <PhotoGallery photos={selected.photos} />}
 
               {/* Korban */}
               {selected.victims.length > 0 && (
@@ -690,7 +781,7 @@ export function PetaBencanaClient({ token, centerLat, centerLng, incidents, year
                 </div>
               )}
 
-              {/* Kerugian material */}
+              {/* Kerugian */}
               {selected.damages.length > 0 && (
                 <div className="px-5 py-4">
                   <p className="mb-3 text-[10px] font-bold tracking-widest text-slate-400 uppercase">

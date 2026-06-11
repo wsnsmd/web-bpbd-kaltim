@@ -7,6 +7,7 @@ import {
   regions,
   incidentVictims,
   incidentDamages,
+  incidentPhotos,
 } from '@db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { IncidentsPanel } from './_components/incidents-panel'
@@ -15,7 +16,6 @@ export const metadata = { title: 'Kejadian Bencana — Admin' }
 
 export default async function IncidentsPage() {
   const [items, types, kabkotas, causes] = await Promise.all([
-    // Ambil incidents dengan join disasterType & regency
     db
       .select({
         id: incidents.id,
@@ -49,19 +49,18 @@ export default async function IncidentsPage() {
       .leftJoin(regions, eq(incidents.regencyId, regions.id))
       .orderBy(desc(incidents.occurredDate), desc(incidents.createdAt)),
 
-    // Master jenis bencana
     db
       .select()
       .from(disasterTypes)
       .where(eq(disasterTypes.isActive, true))
       .orderBy(disasterTypes.sortOrder),
 
-    // Master kab/kota
     db
       .select({ id: regions.id, name: regions.name })
       .from(regions)
       .where(eq(regions.level, 'kabkota'))
       .orderBy(regions.name),
+
     db
       .select({ id: disasterCauses.id, name: disasterCauses.name })
       .from(disasterCauses)
@@ -71,15 +70,16 @@ export default async function IncidentsPage() {
 
   const itemsWithDetails = await Promise.all(
     items.map(async (item) => {
-      const victims = await db
-        .select()
-        .from(incidentVictims)
-        .where(eq(incidentVictims.incidentId, item.id))
-
-      const damages = await db
-        .select()
-        .from(incidentDamages)
-        .where(eq(incidentDamages.incidentId, item.id))
+      // Fetch victims, damages, photos secara paralel per incident
+      const [victims, damages, photos] = await Promise.all([
+        db.select().from(incidentVictims).where(eq(incidentVictims.incidentId, item.id)),
+        db.select().from(incidentDamages).where(eq(incidentDamages.incidentId, item.id)),
+        db
+          .select()
+          .from(incidentPhotos)
+          .where(eq(incidentPhotos.incidentId, item.id))
+          .orderBy(incidentPhotos.sortOrder),
+      ])
 
       return {
         id: item.id,
@@ -103,7 +103,7 @@ export default async function IncidentsPage() {
         addressDetail: item.addressDetail,
         latitude: item.latitude,
         longitude: item.longitude,
-        status: item.status ?? 'aktif', // ← Pastikan tidak null
+        status: item.status ?? 'aktif',
         currentCondition: item.currentCondition,
         currentEffort: item.currentEffort,
         isPublished: item.isPublished ?? true,
@@ -125,7 +125,18 @@ export default async function IncidentsPage() {
           heavyDamage: d.heavyDamage ?? 0,
           moderateDamage: d.moderateDamage ?? 0,
           lightDamage: d.lightDamage ?? 0,
-          estimatedLoss: Number(d.estimatedLoss) ?? 0,
+          areaHeavy: Number(d.areaHeavy ?? 0),
+          areaMedium: Number(d.areaMedium ?? 0),
+          areaLight: Number(d.areaLight ?? 0),
+          estimatedLoss: Number(d.estimatedLoss ?? 0),
+          notes: d.notes,
+        })),
+        // ← tambah photos
+        photos: photos.map((p, i) => ({
+          id: p.id,
+          url: p.url,
+          caption: p.caption ?? '',
+          sortOrder: p.sortOrder ?? i,
         })),
       }
     })

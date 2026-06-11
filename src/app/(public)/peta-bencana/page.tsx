@@ -7,6 +7,7 @@ import {
   regions,
   incidentVictims,
   incidentDamages,
+  incidentPhotos,
   siteSettings,
 } from '@db/schema'
 import { eq, desc, ne, gte, and } from 'drizzle-orm'
@@ -23,8 +24,6 @@ export default async function PetaBencanaPage() {
 
   const regencyRegion = alias(regions, 'regency_region')
   const districtRegion = alias(regions, 'district_region')
-
-  // Hanya tahun berjalan
   const currentYear = new Date().getFullYear()
   const startOfYear = new Date(`${currentYear}-01-01`)
 
@@ -61,8 +60,8 @@ export default async function PetaBencanaPage() {
       .where(
         and(
           eq(incidents.isPublished, true),
-          ne(incidents.status, 'selesai'), // ← exclude selesai
-          gte(incidents.occurredDate, startOfYear) // ← tahun berjalan
+          ne(incidents.status, 'selesai'),
+          gte(incidents.occurredDate, startOfYear)
         )
       )
       .orderBy(desc(incidents.occurredDate), desc(incidents.createdAt)),
@@ -73,12 +72,17 @@ export default async function PetaBencanaPage() {
       .then((rows) => Object.fromEntries(rows.map((r) => [r.key, r.value ?? '']))),
   ])
 
-  // Ambil victims & damages hanya untuk incidents yang tampil
   const incidentIds = allIncidents.map((i) => i.id)
-  const [allVictims, allDamages] =
+
+  // Fetch victims, damages, photos paralel
+  const [allVictims, allDamages, allPhotos] =
     incidentIds.length > 0
-      ? await Promise.all([db.select().from(incidentVictims), db.select().from(incidentDamages)])
-      : [[], []]
+      ? await Promise.all([
+          db.select().from(incidentVictims),
+          db.select().from(incidentDamages),
+          db.select().from(incidentPhotos).orderBy(incidentPhotos.sortOrder),
+        ])
+      : [[], [], []]
 
   const mapToken = settings.mapbox_token ?? ''
   const centerLat = parseFloat(settings.map_latitude ?? '-1.0')
@@ -108,6 +112,10 @@ export default async function PetaBencanaPage() {
       .filter((v) => v.incidentId === i.id)
       .map((v) => ({ ...v, ageGroup: v.ageGroup ?? 'tidak_diketahui' })),
     damages: allDamages.filter((d) => d.incidentId === i.id),
+    // ← tambah photos
+    photos: allPhotos
+      .filter((p) => p.incidentId === i.id)
+      .map((p) => ({ id: p.id, url: p.url, caption: p.caption ?? '' })),
   }))
 
   return (
