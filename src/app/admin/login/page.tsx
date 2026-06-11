@@ -1,157 +1,243 @@
 // src/app/admin/login/page.tsx
 import { Suspense } from 'react'
 import { LoginForm } from './_components/login-form'
-import { Shield, MapPin, Radio, AlertTriangle } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
+import { Shield } from 'lucide-react'
+import { db } from '@/lib/db'
+import { siteSettings } from '@db/schema'
+import { inArray, eq, and, gte, count } from 'drizzle-orm'
+import Image from 'next/image'
+import { incidents } from '@db/schema'
 
-export const metadata = {
-  title: 'Login',
-}
+export const metadata = { title: 'Login' }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const currentYear = new Date().getFullYear()
+  const startOfYear = new Date(`${currentYear}-01-01`)
+
+  const [rows, activeCount, yearCount] = await Promise.all([
+    db
+      .select()
+      .from(siteSettings)
+      .where(inArray(siteSettings.key, ['site_logo', 'site_name'])),
+    db
+      .select({ total: count() })
+      .from(incidents)
+      .where(and(eq(incidents.isPublished, true), eq(incidents.status, 'aktif'))),
+    db
+      .select({ total: count() })
+      .from(incidents)
+      .where(and(eq(incidents.isPublished, true), gte(incidents.occurredDate, startOfYear))),
+  ])
+
+  const s = Object.fromEntries(rows.map((r) => [r.key, r.value ?? '']))
+  const logo = s.site_logo || ''
+  const siteName = s.site_name || 'BPBD Kaltim'
+  const activeIncidents = Number(activeCount[0]?.total ?? 0)
+  const yearIncidents = Number(yearCount[0]?.total ?? 0)
+  const siteKey = process.env.TURNSTILE_SITE_KEY ?? ''
+
   return (
-    <div className="bg-navy-950 relative flex min-h-screen overflow-hidden">
-      {/* ── Kiri: Branding Panel ─────────────────────────────── */}
-      <div className="relative hidden w-[55%] flex-col justify-between p-12 lg:flex">
-        {/* Layered background */}
-        <div className="bg-navy-900 absolute inset-0" />
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              'radial-gradient(ellipse 80% 60% at 20% 80%, #e8500022 0%, transparent 60%),' +
-              'radial-gradient(ellipse 60% 80% at 80% 20%, #1b56a822 0%, transparent 60%)',
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(-55deg,transparent,transparent 60px,rgba(255,255,255,.012) 60px,rgba(255,255,255,.012) 61px)',
-          }}
-        />
-        {/* Grid dot pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
+    <div className="relative flex min-h-screen overflow-hidden" style={{ background: '#080f1a' }}>
+      <div
+        className="pointer-events-none absolute"
+        style={{
+          top: '-10%',
+          left: '-8%',
+          width: '52%',
+          height: '130%',
+          background: 'linear-gradient(135deg, #e85000 0%, #c44000 60%, #7a2800 100%)',
+          transform: 'skewX(-6deg)',
+          zIndex: 0,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute"
+        style={{
+          top: '-10%',
+          left: '-8%',
+          width: '52%',
+          height: '130%',
+          background:
+            'linear-gradient(180deg, rgba(8,15,26,0.55) 0%, rgba(8,15,26,0.2) 50%, rgba(8,15,26,0.6) 100%)',
+          transform: 'skewX(-6deg)',
+          zIndex: 1,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute hidden lg:block"
+        style={{
+          top: '-10%',
+          left: 'calc(44% - 3px)',
+          width: '6px',
+          height: '130%',
+          background: 'rgba(255,255,255,0.08)',
+          transform: 'skewX(-6deg)',
+          zIndex: 2,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          backgroundSize: '200px',
+          opacity: 0.04,
+          mixBlendMode: 'overlay',
+          zIndex: 3,
+        }}
+      />
 
-        {/* Konten */}
-        <div className="relative z-10">
-          {/* Logo */}
+      <div className="relative z-10 flex w-full">
+        {/* Panel Kiri */}
+        <div
+          className="hidden w-[44%] flex-col justify-between p-14 lg:flex"
+          style={{ animation: 'revealLeft 0.7s cubic-bezier(.22,1,.36,1) both' }}
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-bold tracking-wider text-white uppercase">BPBD Kaltim</p>
-              <p className="text-navy-400 text-[11px] tracking-widest uppercase">Portal Admin</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Center copy */}
-        <div className="relative z-10 max-w-md">
-          <Badge
-            variant="outline"
-            className="mb-6 border-orange-500/30 bg-orange-500/10 text-orange-300"
-          >
-            <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-orange-400" />
-            Sistem Aktif 24/7
-          </Badge>
-
-          <h1 className="mb-4 font-serif text-4xl leading-tight font-bold text-white">
-            Pusat Kendali
-            <br />
-            <span className="text-gold-300">Penanggulangan</span>
-            <br />
-            Bencana Kaltim
-          </h1>
-
-          <p className="text-navy-300 mb-8 text-sm leading-relaxed">
-            Sistem informasi terpadu untuk koordinasi, pemantauan, dan pengelolaan penanggulangan
-            bencana Provinsi Kalimantan Timur.
-          </p>
-
-          {/* Stats row */}
-          <div className="flex items-center gap-6">
-            {[
-              { icon: MapPin, value: '10', label: 'Kab/Kota' },
-              { icon: Radio, value: '24/7', label: 'Pusdalops' },
-              { icon: AlertTriangle, value: '128', label: 'Relawan Aktif' },
-            ].map(({ icon: Icon, value, label }) => (
-              <div key={label} className="text-center">
-                <div className="mb-1 flex items-center justify-center gap-1">
-                  <Icon className="h-3 w-3 text-orange-400" />
-                  <span className="text-base font-bold text-white">{value}</span>
-                </div>
-                <p className="text-navy-400 text-[11px]">{label}</p>
+            {logo ? (
+              <Image
+                src={logo}
+                alt={siteName}
+                width={44}
+                height={44}
+                className="h-11 w-11 rounded-xl object-contain drop-shadow-lg"
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm">
+                <Shield className="h-6 w-6 text-white" />
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Footer branding */}
-        <div className="relative z-10">
-          <Separator className="mb-4 bg-white/10" />
-          <p className="text-navy-500 text-xs">
-            &copy; {new Date().getFullYear()} Badan Penanggulangan Bencana Daerah Provinsi
-            Kalimantan Timur
-          </p>
-        </div>
-      </div>
-
-      {/* ── Kanan: Login Panel ───────────────────────────────── */}
-      <div className="bg-navy-950 relative flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
-        {/* Subtle background accent */}
-        <div
-          className="pointer-events-none absolute top-0 right-0 h-80 w-80 rounded-full opacity-10"
-          style={{
-            background: 'radial-gradient(circle, #e85000 0%, transparent 70%)',
-            filter: 'blur(60px)',
-          }}
-        />
-
-        <div className="relative w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500">
-              <Shield className="h-4 w-4 text-white" />
-            </div>
+            )}
             <div>
-              <p className="text-sm font-bold text-white">BPBD Kaltim</p>
-              <p className="text-navy-400 text-[11px]">Portal Admin</p>
+              <p className="text-[13px] font-black tracking-widest text-white uppercase drop-shadow">
+                {siteName}
+              </p>
+              <p className="text-[10px] tracking-[0.2em] text-white/60 uppercase">Portal Admin</p>
             </div>
           </div>
 
-          {/* Heading */}
-          <div className="mb-8">
-            <h2 className="mb-1 text-2xl font-bold text-white">Selamat Datang</h2>
-            <p className="text-navy-400 text-sm">Masuk untuk mengakses panel administrasi.</p>
+          <div>
+            <div
+              className="mb-6 leading-none font-black text-white/5 select-none"
+              style={{ fontSize: 'clamp(5rem, 12vw, 9rem)', letterSpacing: '-0.05em' }}
+              aria-hidden
+            >
+              24/7
+            </div>
+            <div className="mb-3 inline-block border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
+              <span className="text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+                Pusat Kendali Aktif
+              </span>
+            </div>
+            <h1 className="mb-5 text-[clamp(1.8rem,3.2vw,2.8rem)] leading-[1.05] font-black tracking-tight text-white drop-shadow-md">
+              Badan
+              <br />
+              Penanggulangan
+              <br />
+              Bencana
+              <br />
+              Daerah
+              <br />
+              <span className="text-white/50">Kalimantan Timur</span>
+            </h1>
+            <p className="max-w-xs text-[13px] leading-relaxed text-white/55">
+              Sistem informasi terpadu untuk koordinasi, pemantauan, dan pengelolaan kebencanaan
+              Provinsi Kalimantan Timur.
+            </p>
           </div>
 
-          {/* Form */}
-          <Suspense fallback={null}>
-            <LoginForm />
-          </Suspense>
-
-          {/* Divider info */}
-          <div className="mt-6 flex items-center gap-3">
-            <Separator className="flex-1 bg-white/10" />
-            <span className="text-navy-600 text-[11px] whitespace-nowrap">Akses terbatas</span>
-            <Separator className="flex-1 bg-white/10" />
+          <div>
+            <div className="mb-4 h-px bg-white/15" />
+            <div className="grid grid-cols-3 gap-0">
+              {[
+                { val: String(activeIncidents), label: 'Kejadian Aktif' },
+                { val: String(yearIncidents), label: `Kejadian ${currentYear}` },
+                { val: '10', label: 'Kab/Kota Terpantau' },
+              ].map((item, i) => (
+                <div
+                  key={item.label}
+                  className="py-3"
+                  style={{
+                    borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.12)' : 'none',
+                    paddingLeft: i > 0 ? 20 : 0,
+                  }}
+                >
+                  <p className="text-xl leading-none font-black text-white">{item.val}</p>
+                  <p className="mt-0.5 text-[10px] tracking-wider text-white/45 uppercase">
+                    {item.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 text-[10px] text-white/25">
+              &copy; {new Date().getFullYear()} BPBD Provinsi Kalimantan Timur
+            </div>
           </div>
+        </div>
 
-          <p className="text-navy-600 mt-4 text-center text-[11px] leading-relaxed">
-            Hanya personel yang berwenang yang dapat mengakses sistem ini. Seluruh aktivitas
-            tercatat dan diawasi.
-          </p>
+        {/* Panel Kanan */}
+        <div
+          className="flex flex-1 items-center justify-center px-6 py-12 lg:px-14"
+          style={{ animation: 'revealRight 0.7s 0.12s cubic-bezier(.22,1,.36,1) both', opacity: 0 }}
+        >
+          <div className="w-full max-w-90">
+            {/* Mobile logo */}
+            <div className="mb-10 flex items-center gap-3 lg:hidden">
+              {logo ? (
+                <Image
+                  src={logo}
+                  alt={siteName}
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 rounded-xl object-contain"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500">
+                  <Shield className="h-4 w-4 text-white" />
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-bold text-white">{siteName}</p>
+                <p className="text-[11px] text-white/30">Portal Admin</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <div className="mb-2 flex items-center gap-2">
+                <div className="h-7 w-1 rounded-full bg-orange-500" />
+                <span className="text-[11px] font-black tracking-[0.15em] text-orange-400 uppercase">
+                  Masuk ke Sistem
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="bg-white p-8 shadow-2xl"
+              style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)' }}
+            >
+              <Suspense fallback={null}>
+                {/* Pass siteKey ke LoginForm untuk render Turnstile widget */}
+                <LoginForm siteKey={siteKey} />
+              </Suspense>
+            </div>
+
+            <p className="mt-6 text-center text-[11px] leading-relaxed text-white/20">
+              Hanya personel berwenang yang dapat mengakses sistem ini.
+              <br />
+              Seluruh aktivitas tercatat dan diawasi.
+            </p>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes revealLeft {
+          from { opacity:0; transform:translateX(-32px) skewX(2deg); }
+          to   { opacity:1; transform:translateX(0) skewX(0deg); }
+        }
+        @keyframes revealRight {
+          from { opacity:0; transform:translateX(24px); }
+          to   { opacity:1; transform:translateX(0); }
+        }
+      `}</style>
     </div>
   )
 }

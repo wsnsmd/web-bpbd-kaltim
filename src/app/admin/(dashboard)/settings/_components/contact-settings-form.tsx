@@ -261,12 +261,10 @@ export function ContactSettingsForm({ settings }: Props) {
           </FormDescription>
         </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" variant="accent" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Simpan
-          </Button>
-        </div>
+        <Button type="submit" variant="accent" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          Simpan
+        </Button>
       </form>
     </Form>
   )

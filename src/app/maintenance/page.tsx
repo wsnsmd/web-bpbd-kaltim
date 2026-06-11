@@ -1,10 +1,12 @@
 // src/app/maintenance/page.tsx
 import { db } from '@/lib/db'
 import { siteSettings } from '@db/schema'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export const metadata = { title: 'Sedang Dalam Pemeliharaan' }
 
 export default async function MaintenancePage() {
+  noStore()
   const rows = await db.select().from(siteSettings)
   const s = Object.fromEntries(rows.map((r) => [r.key, r.value ?? '']))
 
@@ -22,14 +24,14 @@ export default async function MaintenancePage() {
       {/* Aurora blobs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full opacity-20"
+          className="absolute -bottom-40 -left-40 h-125 w-125 rounded-full opacity-20"
           style={{
             background: 'radial-gradient(circle, #e85000 0%, transparent 70%)',
             animation: 'blob1 14s ease-in-out infinite',
           }}
         />
         <div
-          className="absolute -top-40 -right-40 h-[400px] w-[400px] rounded-full opacity-10"
+          className="absolute -top-40 -right-40 h-100 w-100 rounded-full opacity-10"
           style={{
             background: 'radial-gradient(circle, #1b56a8 0%, transparent 70%)',
             animation: 'blob2 18s ease-in-out infinite',

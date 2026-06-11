@@ -266,7 +266,7 @@ export function OperationalSettingsForm({ settings }: Props) {
 
         <Button type="submit" variant="accent" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          Simpan Pengaturan Operasional
+          Simpan
         </Button>
       </form>
     </Form>

@@ -1,4 +1,4 @@
-// src/lib/auth.ts
+// src/lib/auth.ts — update: tambah verifikasi Turnstile di authorize()
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
@@ -6,10 +6,12 @@ import { users, userRoles, roles } from '@db/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { verifyTurnstile } from '@/lib/verify-turnstile'
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  turnstileToken: z.string().optional(),
 })
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -19,9 +21,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
 
-        const { email, password } = parsed.data
+        const { email, password, turnstileToken } = parsed.data
 
-        // Ambil user beserta roles
+        // ── Verifikasi Turnstile ──────────────────────────────
+        if (process.env.TURNSTILE_SECRET_KEY) {
+          if (!turnstileToken) {
+            throw new Error('Token verifikasi keamanan tidak ditemukan.')
+          }
+          const valid = await verifyTurnstile(turnstileToken)
+          if (!valid) {
+            throw new Error('Verifikasi keamanan gagal. Silakan coba lagi.')
+          }
+        }
+
+        // ── Cek user & roles ──────────────────────────────────
         const user = await db
           .select({
             id: users.id,
@@ -31,7 +44,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             avatar: users.avatar,
             isActive: users.isActive,
             roleSlug: roles.slug,
-            roleName: roles.name,
           })
           .from(users)
           .leftJoin(userRoles, eq(userRoles.userId, users.id))
@@ -39,14 +51,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .where(eq(users.email, email))
           .then((rows) => {
             if (rows.length === 0) return null
-            // Gabungkan roles dari multiple rows
             const base = rows[0]
-            const userRolesList = rows.filter((r) => r.roleSlug).map((r) => r.roleSlug as string)
-            return { ...base, roles: userRolesList }
+            const rolesList = rows.filter((r) => r.roleSlug).map((r) => r.roleSlug as string)
+            return { ...base, roles: rolesList }
           })
 
         if (!user || !user.password) return null
-        if (!user.isActive) throw new Error('Akun tidak aktif')
+        if (!user.isActive) throw new Error('Akun tidak aktif.')
 
         const valid = await bcrypt.compare(password, user.password)
         if (!valid) return null
@@ -75,12 +86,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     },
   },
-  pages: {
-    signIn: '/admin/login',
-    error: '/admin/login',
-  },
-  session: {
-    strategy: 'jwt',
-    maxAge: 8 * 60 * 60, // 8 jam
-  },
+  pages: { signIn: '/admin/login', error: '/admin/login' },
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 },
 })

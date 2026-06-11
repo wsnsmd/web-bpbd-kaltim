@@ -22,6 +22,7 @@ async function getHeroData() {
       .where(and(eq(incidents.isPublished, true), gte(incidents.occurredDate, startOfYear))),
   ])
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value ?? '']))
+  console.log(map)
   return {
     title: map.hero_title || 'Penanggulangan Bencana\nKalimantan Timur',
     subtitle: map.hero_subtitle || 'Tanggap, Tangguh, Cepat',
@@ -35,6 +36,7 @@ async function getHeroData() {
     ctaSecondaryHref: map.hero_cta_secondary_href || '/data-kejadian',
     bgImage: map.hero_bg_image || '',
     statusWilayah: map.status_wilayah || 'aman',
+    emergency: map.contact_emergency || '112',
     activeIncidents: Number(activeCount[0]?.total ?? 0),
     yearIncidents: Number(totalCount[0]?.total ?? 0),
     currentYear,
@@ -349,11 +351,11 @@ export async function HeroSection() {
               </Link>
             )}
             <Link
-              href="tel:112"
+              href={`tel:${s.emergency}`}
               className="inline-flex items-center gap-2 rounded-xl bg-red-600/90 px-6 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-600"
             >
               <AlertTriangle className="h-4 w-4" />
-              Darurat 112
+              Darurat {s.emergency}
             </Link>
           </div>
 

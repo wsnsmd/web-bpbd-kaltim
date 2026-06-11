@@ -20,34 +20,36 @@ import {
   LabelList,
 } from 'recharts'
 
-interface SummaryStats {
-  totalKejadian: number
-  mengungsi: number
-  menderita: number
-  hilang: number
-  meninggal: number
-  lukaSakit: number
-  totalKK: number
-  totalKerugian: number
+// ── Types ─────────────────────────────────────────────────────
+interface RawIncident {
+  id: number
+  tahun: number
+  bulan: number
+  regencyName: string
+  typeName: string
+  typeCategory: string
+  typeColor: string
 }
-interface JenisItem {
-  name: string
-  category: string
-  color: string
-  total: number
+interface RawVictim {
+  incidentId: number | null
+  impactType: string
+  countMale: number
+  countFemale: number
+  countTotal: number
+}
+interface RawDamage {
+  incidentId: number | null
+  estimatedLoss: number
 }
 interface Props {
-  summaryStats: SummaryStats
-  perKabkota: { name: string; total: number }[]
-  perJenis: JenisItem[]
-  perBulanAll: { tahun: number; bulan: number; total: number }[]
-  perTahun: { tahun: number; total: number }[]
-  alamCount: number
-  nonAlamCount: number
-  currentYear: number
+  rawIncidents: RawIncident[]
+  rawVictims: RawVictim[]
+  rawDamages: RawDamage[]
   availableYears: number[]
+  currentYear: number
 }
 
+// ── Constants ─────────────────────────────────────────────────
 const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
 function fmtNum(n: number) {
@@ -59,20 +61,13 @@ function fmtRp(n: number) {
   return `Rp ${fmtNum(n)}`
 }
 
-interface TooltipPayloadItem {
-  name: string
-  value: number
-  color?: string
-  fill?: string
-}
-
 function CustomTooltip({
   active,
   payload,
   label,
 }: {
   active?: boolean
-  payload?: TooltipPayloadItem[]
+  payload?: { name: string; value: number; color?: string; fill?: string }[]
   label?: string
 }) {
   if (!active || !payload?.length) return null
@@ -89,15 +84,11 @@ function CustomTooltip({
 }
 
 export function StatistikClient({
-  summaryStats,
-  perKabkota,
-  perJenis,
-  perBulanAll,
-  perTahun,
-  alamCount,
-  nonAlamCount,
-  currentYear,
+  rawIncidents,
+  rawVictims,
+  rawDamages,
   availableYears,
+  currentYear,
 }: Props) {
   const [selectedYears, setSelectedYears] = useState<number[]>([currentYear])
 
@@ -106,28 +97,103 @@ export function StatistikClient({
       prev.includes(y)
         ? prev.length > 1
           ? prev.filter((x) => x !== y)
-          : prev // min 1 tahun
+          : prev
         : [...prev, y].sort()
     )
   }
 
-  // Hitung data bulan berdasarkan tahun yang dipilih
-  const bulanChartData = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => {
-      const bulanIdx = i + 1
-      const total = selectedYears.reduce((sum, y) => {
-        const found = perBulanAll.find((b) => b.tahun === y && b.bulan === bulanIdx)
-        return sum + (found?.total ?? 0)
-      }, 0)
-      return { name: BULAN[i], total }
+  // ── Filter incidents berdasarkan tahun yang dipilih ──────
+  const filteredIncidents = useMemo(
+    () => rawIncidents.filter((r) => selectedYears.includes(r.tahun)),
+    [rawIncidents, selectedYears]
+  )
+
+  // ── Set ID incidents yang lolos filter ───────────────────
+  const filteredIds = useMemo(
+    () => new Set(filteredIncidents.map((r) => r.id)),
+    [filteredIncidents]
+  )
+
+  // ── Korban dari incidents yang difilter ──────────────────
+  const filteredVictims = useMemo(
+    () => rawVictims.filter((v) => v.incidentId !== null && filteredIds.has(v.incidentId)),
+    [rawVictims, filteredIds]
+  )
+
+  // ── Kerugian dari incidents yang difilter ────────────────
+  const filteredDamages = useMemo(
+    () => rawDamages.filter((d) => d.incidentId !== null && filteredIds.has(d.incidentId)),
+    [rawDamages, filteredIds]
+  )
+
+  // ── Summary stats ────────────────────────────────────────
+  const summaryStats = useMemo(() => {
+    const getVictimTotal = (type: string) =>
+      filteredVictims.filter((v) => v.impactType === type).reduce((s, v) => s + v.countTotal, 0)
+
+    return {
+      totalKejadian: filteredIncidents.length,
+      meninggal: getVictimTotal('meninggal'),
+      hilang: getVictimTotal('hilang'),
+      lukaSakit: getVictimTotal('luka_sakit'),
+      menderita: getVictimTotal('menderita'),
+      mengungsi: getVictimTotal('mengungsi'),
+      totalKerugian: filteredDamages.reduce((s, d) => s + d.estimatedLoss, 0),
+    }
+  }, [filteredIncidents, filteredVictims, filteredDamages])
+
+  // ── Per Kab/Kota ─────────────────────────────────────────
+  const perKabkota = useMemo(() => {
+    const map = new Map<string, number>()
+    filteredIncidents.forEach((r) => {
+      map.set(r.regencyName, (map.get(r.regencyName) ?? 0) + 1)
     })
-  }, [selectedYears, perBulanAll])
+    return [...map.entries()]
+      .map(([name, total]) => ({
+        name: name.replace('Kabupaten ', 'Kab. ').replace('Kota ', ''),
+        total,
+      }))
+      .sort((a, b) => b.total - a.total)
+  }, [filteredIncidents])
 
-  const kabkotaChartData = perKabkota.map((k) => ({
-    name: k.name.replace('Kabupaten ', 'Kab. ').replace('Kota ', ''),
-    total: k.total,
-  }))
+  // ── Per Jenis ────────────────────────────────────────────
+  const perJenis = useMemo(() => {
+    const map = new Map<string, { total: number; category: string; color: string }>()
+    filteredIncidents.forEach((r) => {
+      const cur = map.get(r.typeName)
+      map.set(r.typeName, {
+        total: (cur?.total ?? 0) + 1,
+        category: r.typeCategory,
+        color: r.typeColor,
+      })
+    })
+    return [...map.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.total - a.total)
+  }, [filteredIncidents])
 
+  // ── Per Bulan ─────────────────────────────────────────────
+  const bulanChartData = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => ({
+        name: BULAN[i],
+        total: filteredIncidents.filter((r) => r.bulan === i + 1).length,
+      })),
+    [filteredIncidents]
+  )
+
+  // ── Per Tahun (semua data, tidak difilter) ───────────────
+  const perTahun = useMemo(() => {
+    const map = new Map<number, number>()
+    rawIncidents.forEach((r) => map.set(r.tahun, (map.get(r.tahun) ?? 0) + 1))
+    return [...map.entries()]
+      .map(([tahun, total]) => ({ name: String(tahun), total }))
+      .sort((a, b) => Number(a.name) - Number(b.name))
+  }, [rawIncidents])
+
+  // ── Pie data ─────────────────────────────────────────────
+  const alamCount = perJenis.filter((j) => j.category === 'alam').reduce((s, j) => s + j.total, 0)
+  const nonAlamCount = perJenis
+    .filter((j) => j.category !== 'alam')
+    .reduce((s, j) => s + j.total, 0)
   const totalForPie = alamCount + nonAlamCount
   const pieData = [
     { name: 'Alam', value: alamCount, color: '#6366f1' },
@@ -136,9 +202,9 @@ export function StatistikClient({
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ── Header ──────────────────────────────────────────── */}
+      {/* Header */}
       <div className="bg-navy-900 px-4 py-8">
-        <div className="mx-auto max-w-screen-2xl px-4 md:px-8">
+        <div className="max-w-content-lg mx-auto px-4 md:px-8">
           <div className="text-navy-400 mb-3 flex items-center gap-2 text-xs">
             <Link href="/" className="transition hover:text-white">
               Beranda
@@ -155,11 +221,19 @@ export function StatistikClient({
                 Data Bencana BPBD Provinsi Kalimantan Timur · Diperbarui Otomatis
               </p>
             </div>
-
-            {/* ── Filter Tahun ── */}
             {availableYears.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-navy-400 text-xs font-semibold">Tahun:</span>
+                <button
+                  onClick={() => setSelectedYears([...availableYears])}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition ${
+                    selectedYears.length === availableYears.length
+                      ? 'border-white/40 bg-white/20 text-white'
+                      : 'border-white/20 bg-white/10 text-white/60 hover:bg-white/20'
+                  }`}
+                >
+                  Semua
+                </button>
                 {availableYears.map((y) => {
                   const active = selectedYears.includes(y)
                   return (
@@ -183,19 +257,16 @@ export function StatistikClient({
         </div>
       </div>
 
-      <div className="mx-auto max-w-screen-2xl space-y-6 px-4 py-8 md:px-8">
-        {/* ── Summary ─────────────────────────────────────────── */}
+      <div className="max-w-content-lg mx-auto space-y-6 px-4 py-8 md:px-8">
+        {/* Summary cards */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
-          {/* Total kejadian — card besar */}
-          <div className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl bg-orange-500 p-8 text-center text-white shadow-md">
+          <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl bg-orange-500 p-8 text-center text-white shadow-md">
             <p className="mb-2 text-sm font-bold tracking-widest uppercase opacity-90">
               Total Kejadian
             </p>
             <p className="text-7xl leading-none font-black">{fmtNum(summaryStats.totalKejadian)}</p>
-            <p className="mt-3 text-xs opacity-70">Seluruh data yang tercatat</p>
+            <p className="mt-2 text-xs opacity-70">Tahun {selectedYears.join(', ')}</p>
           </div>
-
-          {/* Grid 4 stats */}
           <div className="grid grid-cols-2 gap-4">
             {[
               { label: 'Mengungsi', value: summaryStats.mengungsi, sub: 'Jiwa' },
@@ -219,16 +290,7 @@ export function StatistikClient({
           </div>
         </div>
 
-        {/* Row 3 stats bawah */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
-            <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-              Total KK Mengungsi
-            </p>
-            <p className="text-navy-800 mt-1 text-3xl leading-none font-black">
-              {fmtNum(summaryStats.totalKK)}
-            </p>
-          </div>
           <div className="rounded-xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
             <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
               Luka / Sakit
@@ -237,6 +299,14 @@ export function StatistikClient({
               {fmtNum(summaryStats.lukaSakit)}
             </p>
             <p className="mt-1 text-[11px] text-slate-400">Jiwa</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
+            <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+              KK Mengungsi
+            </p>
+            <p className="text-navy-800 mt-1 text-3xl leading-none font-black">
+              {fmtNum(summaryStats.mengungsi)}
+            </p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
             <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
@@ -251,18 +321,15 @@ export function StatistikClient({
           </div>
         </div>
 
-        {/* ── Chart Per Kab/Kota + Jenis ──────────────────────── */}
+        {/* Charts per kab/kota + jenis */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          {/* Line chart kab/kota */}
           <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-            <h3 className="mb-5 text-base font-bold text-orange-500">
+            <h3 className="mb-1 text-base font-bold text-orange-500">
               Jumlah Kejadian Per Kab/Kota
             </h3>
+            <p className="mb-5 text-xs text-slate-400">Tahun {selectedYears.join(', ')}</p>
             <ResponsiveContainer width="100%" height={280}>
-              <LineChart
-                data={kabkotaChartData}
-                margin={{ top: 20, right: 20, left: 0, bottom: 70 }}
-              >
+              <LineChart data={perKabkota} margin={{ top: 20, right: 20, left: 0, bottom: 70 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="name"
@@ -291,9 +358,7 @@ export function StatistikClient({
             </ResponsiveContainer>
           </div>
 
-          {/* Pie + tabel jenis */}
           <div className="space-y-4">
-            {/* Pie chart */}
             <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <h3 className="mb-4 text-sm font-bold text-slate-700">Kategori Bencana</h3>
               <div className="flex items-center gap-4">
@@ -341,13 +406,11 @@ export function StatistikClient({
               </div>
             </div>
 
-            {/* Tabel per jenis */}
             <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <h3 className="mb-4 text-sm font-bold text-slate-700">Per Jenis Bencana</h3>
               <div className="space-y-2.5">
                 {perJenis.slice(0, 8).map((j, i) => {
                   const maxVal = perJenis[0]?.total ?? 1
-                  const pct = (j.total / maxVal) * 100
                   return (
                     <div key={j.name} className="flex items-center gap-2 text-xs">
                       <span className="w-4 shrink-0 text-right font-semibold text-slate-400">
@@ -357,7 +420,7 @@ export function StatistikClient({
                       <div className="h-1.5 flex-1 rounded-full bg-slate-100">
                         <div
                           className="h-1.5 rounded-full transition-all"
-                          style={{ width: `${pct}%`, background: j.color }}
+                          style={{ width: `${(j.total / maxVal) * 100}%`, background: j.color }}
                         />
                       </div>
                       <span className="w-6 shrink-0 text-right font-black text-slate-800">
@@ -371,7 +434,7 @@ export function StatistikClient({
           </div>
         </div>
 
-        {/* ── Chart Per Bulan ─────────────────────────────────── */}
+        {/* Chart per bulan */}
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <h3 className="mb-1 text-base font-bold text-orange-500">Jumlah Kejadian Per Bulan</h3>
           <p className="mb-6 text-xs text-slate-400">Tahun {selectedYears.join(', ')}</p>
@@ -402,15 +465,13 @@ export function StatistikClient({
           </p>
         </div>
 
-        {/* ── Chart Per Tahun ─────────────────────────────────── */}
+        {/* Chart per tahun — selalu semua data */}
         {perTahun.length > 1 && (
           <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-            <h3 className="mb-5 text-base font-bold text-orange-500">Tren Kejadian Per Tahun</h3>
+            <h3 className="mb-1 text-base font-bold text-orange-500">Tren Kejadian Per Tahun</h3>
+            <p className="mb-5 text-xs text-slate-400">Semua tahun</p>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={perTahun.map((t) => ({ name: String(t.tahun), total: t.total }))}
-                margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-              >
+              <BarChart data={perTahun} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 11 }} />

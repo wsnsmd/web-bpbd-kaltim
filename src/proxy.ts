@@ -18,6 +18,9 @@ export default auth(async (req) => {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
+    pathname.startsWith('/uploads') || // file statis upload — jangan di-redirect
+    pathname.startsWith('/images') || // folder images statis
+    pathname.startsWith('/icons') || // folder icons
     pathname === '/maintenance'
 
   if (!isAdminPath && !isSystemPath) {
@@ -72,5 +75,5 @@ export default auth(async (req) => {
 })
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|uploads|images|icons|maintenance).*)'],
 }

@@ -107,12 +107,10 @@ export function SeoSettingsForm({ settings }: Props) {
           )}
         />
 
-        <div className="flex justify-end">
-          <Button type="submit" variant="accent" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Simpan
-          </Button>
-        </div>
+        <Button type="submit" variant="accent" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          Simpan
+        </Button>
       </form>
     </Form>
   )

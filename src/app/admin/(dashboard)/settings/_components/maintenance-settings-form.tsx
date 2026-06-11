@@ -176,7 +176,7 @@ export function MaintenanceSettingsForm({ settings }: Props) {
 
         <Button type="submit" variant="accent" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          Simpan Pengaturan Maintenance
+          Simpan
         </Button>
       </form>
     </Form>
