@@ -89,6 +89,28 @@ const photoSchema = z.object({
   sortOrder: z.number(),
 })
 
+// Bersihkan spasi liar (mis. "- 0.548275" hasil ketik/paste dari Google Maps)
+// dan validasi rentang koordinat langsung di form, sebelum sampai ke server.
+function coordSchema(label: string, min: number, max: number) {
+  return z
+    .string()
+    .min(1, `${label} wajib diisi`)
+    .transform((v) => v.replace(/\s+/g, ''))
+    .superRefine((v, ctx) => {
+      const num = Number(v)
+      if (v === '' || Number.isNaN(num)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Format ${label} tidak valid` })
+        return
+      }
+      if (num < min || num > max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} harus antara ${min} dan ${max}`,
+        })
+      }
+    })
+}
+
 const schema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
   disasterTypeId: z.number().min(1, 'Jenis bencana wajib dipilih'),
@@ -103,8 +125,8 @@ const schema = z.object({
   villageId: z.string().optional(),
   villageName: z.string().optional(),
   addressDetail: z.string().optional(),
-  latitude: z.string().min(1, 'Latitude wajib diisi'),
-  longitude: z.string().min(1, 'Longitude wajib diisi'),
+  latitude: coordSchema('Latitude', -90, 90),
+  longitude: coordSchema('Longitude', -180, 180),
   status: z.enum(['aktif', 'ditangani', 'selesai']),
   currentCondition: z.string().optional(),
   currentEffort: z.string().optional(),
@@ -496,7 +518,10 @@ export function IncidentDialog({
         : await createIncidentAction(values)
       if (res?.success) {
         toast.success(isEdit ? 'Kejadian diperbarui' : 'Kejadian ditambahkan')
-        onSuccess({ ...values, id: item?.id ?? Date.now() })
+        const realId = isEdit ? item!.id : 'id' in res ? res.id : undefined
+        if (realId != null) {
+          onSuccess({ ...values, id: realId })
+        }
         onOpenChange(false)
       } else {
         toast.error(res?.error ?? 'Terjadi kesalahan pada server')

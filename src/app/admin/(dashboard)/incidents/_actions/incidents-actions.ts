@@ -37,6 +37,30 @@ const photoSchema = z.object({
   sortOrder: z.number().default(0),
 })
 
+// Bersihkan spasi liar (mis. "- 0.548275" hasil ketik/paste dari Google Maps)
+// dan validasi rentang koordinat sebelum menyentuh database.
+// Kolom `latitude`/`longitude` bertipe DECIMAL — MariaDB menolak string
+// berspasi dengan error ER_TRUNCATED_WRONG_VALUE_FOR_FIELD.
+function coordSchema(label: string, min: number, max: number) {
+  return z
+    .string()
+    .min(1, `${label} wajib diisi`)
+    .transform((v) => v.replace(/\s+/g, ''))
+    .superRefine((v, ctx) => {
+      const num = Number(v)
+      if (v === '' || Number.isNaN(num)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Format ${label} tidak valid` })
+        return
+      }
+      if (num < min || num > max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} harus antara ${min} dan ${max}`,
+        })
+      }
+    })
+}
+
 const schema = z.object({
   title: z.string().min(1),
   disasterTypeId: z.number().min(1),
@@ -50,8 +74,8 @@ const schema = z.object({
   districtId: z.string().optional(),
   villageName: z.string().optional(),
   addressDetail: z.string().optional(),
-  latitude: z.string().min(1),
-  longitude: z.string().min(1),
+  latitude: coordSchema('Latitude', -90, 90),
+  longitude: coordSchema('Longitude', -180, 180),
   status: z.enum(['aktif', 'ditangani', 'selesai']),
   currentCondition: z.string().optional(),
   currentEffort: z.string().optional(),
@@ -138,80 +162,108 @@ export async function createIncidentAction(values: IncidentFormValues) {
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message }
   const d = parsed.data
 
-  const [result] = await db
-    .insert(incidents)
-    .values({
-      title: d.title,
-      disasterTypeId: d.disasterTypeId,
-      causeId: d.causeId ?? null,
-      causeDetail: n(d.causeDetail),
-      description: n(d.description),
-      source: n(d.source),
-      occurredDate: new Date(d.occurredDate),
-      occurredTime: n(d.occurredTime),
-      provinceId: '64',
-      regencyId: d.regencyId,
-      districtId: n(d.districtId),
-      villageName: n(d.villageName),
-      addressDetail: n(d.addressDetail),
-      latitude: d.latitude,
-      longitude: d.longitude,
-      status: d.status,
-      currentCondition: n(d.currentCondition),
-      currentEffort: n(d.currentEffort),
-      isPublished: d.isPublished,
-      reportedBy: session.user.id,
+  let newIncidentId: number | undefined
+
+  try {
+    await db.transaction(async (tx) => {
+      const [result] = await tx
+        .insert(incidents)
+        .values({
+          title: d.title,
+          disasterTypeId: d.disasterTypeId,
+          causeId: d.causeId ?? null,
+          causeDetail: n(d.causeDetail),
+          description: n(d.description),
+          source: n(d.source),
+          occurredDate: new Date(d.occurredDate),
+          occurredTime: n(d.occurredTime),
+          provinceId: '64',
+          regencyId: d.regencyId,
+          districtId: n(d.districtId),
+          villageName: n(d.villageName),
+          addressDetail: n(d.addressDetail),
+          latitude: d.latitude,
+          longitude: d.longitude,
+          status: d.status,
+          currentCondition: n(d.currentCondition),
+          currentEffort: n(d.currentEffort),
+          isPublished: d.isPublished,
+          reportedBy: session.user.id,
+        })
+        .$returningId()
+
+      const incidentId = result.id
+      newIncidentId = incidentId
+
+      if (d.victims.length > 0) {
+        await tx.insert(incidentVictims).values(
+          d.victims.map((v) => ({
+            incidentId,
+            impactType: v.impactType,
+            ageGroup: v.ageGroup,
+            countMale: v.countMale,
+            countFemale: v.countFemale,
+            countTotal: (v.countMale || 0) + (v.countFemale || 0),
+            notes: n(v.notes),
+          }))
+        )
+      }
+
+      if (d.damages.length > 0) {
+        await tx.insert(incidentDamages).values(
+          d.damages.map((dm) => ({
+            incidentId,
+            assetName: dm.assetName,
+            heavyDamage: dm.heavyDamage,
+            moderateDamage: dm.moderateDamage,
+            lightDamage: dm.lightDamage,
+            areaHeavy: String(dm.areaHeavy ?? 0),
+            areaMedium: String(dm.areaMedium ?? 0),
+            areaLight: String(dm.areaLight ?? 0),
+            estimatedLoss: String(dm.estimatedLoss),
+            notes: n(dm.notes),
+          }))
+        )
+      }
+
+      if (d.photos.length > 0) {
+        await tx.insert(incidentPhotos).values(
+          d.photos.map((p, i) => ({
+            incidentId,
+            url: p.url,
+            caption: n(p.caption),
+            sortOrder: p.sortOrder ?? i,
+            uploadedBy: session.user.id,
+          }))
+        )
+      }
     })
-    .$returningId()
-
-  const incidentId = result.id
-
-  if (d.victims.length > 0) {
-    await db.insert(incidentVictims).values(
-      d.victims.map((v) => ({
-        incidentId,
-        impactType: v.impactType,
-        ageGroup: v.ageGroup,
-        countMale: v.countMale,
-        countFemale: v.countFemale,
-        countTotal: (v.countMale || 0) + (v.countFemale || 0),
-        notes: n(v.notes),
-      }))
-    )
-  }
-
-  if (d.damages.length > 0) {
-    await db.insert(incidentDamages).values(
-      d.damages.map((dm) => ({
-        incidentId,
-        assetName: dm.assetName,
-        heavyDamage: dm.heavyDamage,
-        moderateDamage: dm.moderateDamage,
-        lightDamage: dm.lightDamage,
-        areaHeavy: String(dm.areaHeavy ?? 0),
-        areaMedium: String(dm.areaMedium ?? 0),
-        areaLight: String(dm.areaLight ?? 0),
-        estimatedLoss: String(dm.estimatedLoss),
-        notes: n(dm.notes),
-      }))
-    )
-  }
-
-  if (d.photos.length > 0) {
-    await db.insert(incidentPhotos).values(
-      d.photos.map((p, i) => ({
-        incidentId,
-        url: p.url,
-        caption: n(p.caption),
-        sortOrder: p.sortOrder ?? i,
-        uploadedBy: session.user.id,
-      }))
-    )
+  } catch (error) {
+    // Log detail lengkap ke server (PM2 logs) untuk diagnosis,
+    // tapi kembalikan pesan yang aman & jelas ke client.
+    console.error('[createIncidentAction] Gagal menyimpan kejadian:', error)
+    const code = (error as { code?: string })?.code
+    if (code === 'ER_NO_REFERENCED_ROW_2' || code === 'ER_NO_REFERENCED_ROW') {
+      return {
+        success: false,
+        error: 'Jenis bencana / penyebab / wilayah yang dipilih tidak valid atau sudah dihapus.',
+      }
+    }
+    if (code === 'ECONNRESET' || code === 'PROTOCOL_CONNECTION_LOST' || code === 'ETIMEDOUT') {
+      return {
+        success: false,
+        error: 'Koneksi ke database terputus sesaat. Silakan coba simpan ulang.',
+      }
+    }
+    return { success: false, error: 'Gagal menyimpan kejadian ke database. Coba lagi.' }
   }
 
   revalidatePath('/pusdalops')
   revalidatePath('/admin/incidents')
-  return { success: true }
+  // Kembalikan id ASLI dari database — client tidak boleh menebak id
+  // sendiri (mis. dengan Date.now()) karena itu bisa membuat aksi
+  // berikutnya (edit/hapus foto) menunjuk ke id yang tidak pernah ada.
+  return { success: true, id: newIncidentId }
 }
 
 export async function updateIncidentAction(id: number, values: IncidentFormValues) {
@@ -222,110 +274,132 @@ export async function updateIncidentAction(id: number, values: IncidentFormValue
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message }
   const d = parsed.data
 
-  await db
-    .update(incidents)
-    .set({
-      title: d.title,
-      disasterTypeId: d.disasterTypeId,
-      causeId: d.causeId ?? null,
-      causeDetail: n(d.causeDetail),
-      description: n(d.description),
-      source: n(d.source),
-      occurredDate: new Date(d.occurredDate),
-      occurredTime: n(d.occurredTime),
-      regencyId: d.regencyId,
-      districtId: n(d.districtId),
-      villageName: n(d.villageName),
-      addressDetail: n(d.addressDetail),
-      latitude: d.latitude,
-      longitude: d.longitude,
-      status: d.status,
-      currentCondition: n(d.currentCondition),
-      currentEffort: n(d.currentEffort),
-      isPublished: d.isPublished,
-      updatedAt: new Date(),
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(incidents)
+        .set({
+          title: d.title,
+          disasterTypeId: d.disasterTypeId,
+          causeId: d.causeId ?? null,
+          causeDetail: n(d.causeDetail),
+          description: n(d.description),
+          source: n(d.source),
+          occurredDate: new Date(d.occurredDate),
+          occurredTime: n(d.occurredTime),
+          regencyId: d.regencyId,
+          districtId: n(d.districtId),
+          villageName: n(d.villageName),
+          addressDetail: n(d.addressDetail),
+          latitude: d.latitude,
+          longitude: d.longitude,
+          status: d.status,
+          currentCondition: n(d.currentCondition),
+          currentEffort: n(d.currentEffort),
+          isPublished: d.isPublished,
+          updatedAt: new Date(),
+        })
+        .where(eq(incidents.id, id))
+
+      await tx.delete(incidentVictims).where(eq(incidentVictims.incidentId, id))
+      if (d.victims.length > 0) {
+        await tx.insert(incidentVictims).values(
+          d.victims.map((v) => ({
+            incidentId: id,
+            impactType: v.impactType,
+            ageGroup: v.ageGroup,
+            countMale: v.countMale,
+            countFemale: v.countFemale,
+            countTotal: (v.countMale || 0) + (v.countFemale || 0),
+            notes: n(v.notes),
+          }))
+        )
+      }
+
+      await tx.delete(incidentDamages).where(eq(incidentDamages.incidentId, id))
+      if (d.damages.length > 0) {
+        await tx.insert(incidentDamages).values(
+          d.damages.map((dm) => ({
+            incidentId: id,
+            assetName: dm.assetName,
+            heavyDamage: dm.heavyDamage,
+            moderateDamage: dm.moderateDamage,
+            lightDamage: dm.lightDamage,
+            areaHeavy: String(dm.areaHeavy ?? 0),
+            areaMedium: String(dm.areaMedium ?? 0),
+            areaLight: String(dm.areaLight ?? 0),
+            estimatedLoss: String(dm.estimatedLoss),
+            notes: n(dm.notes),
+          }))
+        )
+      }
+
+      // Photos: hapus yang tidak ada di list baru, insert yang baru
+      const existingPhotos = await tx
+        .select({ id: incidentPhotos.id, url: incidentPhotos.url })
+        .from(incidentPhotos)
+        .where(eq(incidentPhotos.incidentId, id))
+
+      const newUrls = new Set(d.photos.map((p) => p.url))
+      // Hapus foto yang dihapus user (file fisik dihapus best-effort, di luar transaksi DB)
+      for (const ep of existingPhotos) {
+        if (!newUrls.has(ep.url)) {
+          if (ep.url.startsWith('/uploads/')) {
+            const filePath = join(process.cwd(), 'public', ep.url)
+            try {
+              await unlink(filePath)
+            } catch {
+              /* file mungkin sudah tidak ada */
+            }
+          }
+          await tx.delete(incidentPhotos).where(eq(incidentPhotos.id, ep.id))
+        }
+      }
+
+      // Insert foto baru yang belum ada
+      const existingUrls = new Set(existingPhotos.map((p) => p.url))
+      const newPhotos = d.photos.filter((p) => !existingUrls.has(p.url))
+      if (newPhotos.length > 0) {
+        await tx.insert(incidentPhotos).values(
+          newPhotos.map((p, i) => ({
+            incidentId: id,
+            url: p.url,
+            caption: n(p.caption),
+            sortOrder: p.sortOrder ?? i,
+            uploadedBy: session.user.id,
+          }))
+        )
+      }
+
+      // Update sortOrder foto yang ada
+      for (const p of d.photos) {
+        if (existingUrls.has(p.url)) {
+          const existing = existingPhotos.find((ep) => ep.url === p.url)
+          if (existing) {
+            await tx
+              .update(incidentPhotos)
+              .set({ caption: n(p.caption), sortOrder: p.sortOrder })
+              .where(eq(incidentPhotos.id, existing.id))
+          }
+        }
+      }
     })
-    .where(eq(incidents.id, id))
-
-  await db.delete(incidentVictims).where(eq(incidentVictims.incidentId, id))
-  if (d.victims.length > 0) {
-    await db.insert(incidentVictims).values(
-      d.victims.map((v) => ({
-        incidentId: id,
-        impactType: v.impactType,
-        ageGroup: v.ageGroup,
-        countMale: v.countMale,
-        countFemale: v.countFemale,
-        countTotal: (v.countMale || 0) + (v.countFemale || 0),
-        notes: n(v.notes),
-      }))
-    )
-  }
-
-  await db.delete(incidentDamages).where(eq(incidentDamages.incidentId, id))
-  if (d.damages.length > 0) {
-    await db.insert(incidentDamages).values(
-      d.damages.map((dm) => ({
-        incidentId: id,
-        assetName: dm.assetName,
-        heavyDamage: dm.heavyDamage,
-        moderateDamage: dm.moderateDamage,
-        lightDamage: dm.lightDamage,
-        areaHeavy: String(dm.areaHeavy ?? 0),
-        areaMedium: String(dm.areaMedium ?? 0),
-        areaLight: String(dm.areaLight ?? 0),
-        estimatedLoss: String(dm.estimatedLoss),
-        notes: n(dm.notes),
-      }))
-    )
-  }
-
-  // Photos: hapus yang tidak ada di list baru, insert yang baru
-  const existingPhotos = await db
-    .select({ id: incidentPhotos.id, url: incidentPhotos.url })
-    .from(incidentPhotos)
-    .where(eq(incidentPhotos.incidentId, id))
-
-  const newUrls = new Set(d.photos.map((p) => p.url))
-  // Hapus foto yang dihapus user
-  for (const ep of existingPhotos) {
-    if (!newUrls.has(ep.url)) {
-      if (ep.url.startsWith('/uploads/')) {
-        const filePath = join(process.cwd(), 'public', ep.url)
-        try {
-          await (await import('fs/promises')).unlink(filePath)
-        } catch {}
-      }
-      await db.delete(incidentPhotos).where(eq(incidentPhotos.id, ep.id))
-    }
-  }
-
-  // Insert foto baru yang belum ada
-  const existingUrls = new Set(existingPhotos.map((p) => p.url))
-  const newPhotos = d.photos.filter((p) => !existingUrls.has(p.url))
-  if (newPhotos.length > 0) {
-    await db.insert(incidentPhotos).values(
-      newPhotos.map((p, i) => ({
-        incidentId: id,
-        url: p.url,
-        caption: n(p.caption),
-        sortOrder: p.sortOrder ?? i,
-        uploadedBy: session.user.id,
-      }))
-    )
-  }
-
-  // Update sortOrder foto yang ada
-  for (const p of d.photos) {
-    if (existingUrls.has(p.url)) {
-      const existing = existingPhotos.find((ep) => ep.url === p.url)
-      if (existing) {
-        await db
-          .update(incidentPhotos)
-          .set({ caption: n(p.caption), sortOrder: p.sortOrder })
-          .where(eq(incidentPhotos.id, existing.id))
+  } catch (error) {
+    console.error('[updateIncidentAction] Gagal memperbarui kejadian:', error)
+    const code = (error as { code?: string })?.code
+    if (code === 'ER_NO_REFERENCED_ROW_2' || code === 'ER_NO_REFERENCED_ROW') {
+      return {
+        success: false,
+        error: 'Jenis bencana / penyebab / wilayah yang dipilih tidak valid atau sudah dihapus.',
       }
     }
+    if (code === 'ECONNRESET' || code === 'PROTOCOL_CONNECTION_LOST' || code === 'ETIMEDOUT') {
+      return {
+        success: false,
+        error: 'Koneksi ke database terputus sesaat. Silakan coba simpan ulang.',
+      }
+    }
+    return { success: false, error: 'Gagal memperbarui kejadian di database. Coba lagi.' }
   }
 
   revalidatePath('/pusdalops')

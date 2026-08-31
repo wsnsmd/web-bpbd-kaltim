@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus,
@@ -164,6 +164,9 @@ function PageBtn({
 export function IncidentsPanel({ initialItems, disasterTypes, kabkotas, causes }: Props) {
   const router = useRouter()
   const [items, setItems] = useState(initialItems)
+  useEffect(() => {
+    setItems(initialItems)
+  }, [initialItems])
   const [editItem, setEditItem] = useState<IncidentItem | null>(null)
   const [timelineItem, setTimelineItem] = useState<IncidentItem | null>(null)
   const [showCreate, setShowCreate] = useState(false)
